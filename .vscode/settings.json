@@ -1,0 +1,4 @@
+{
+  "PandocCiter.DefaultBibs": ["preparation/bibliography.bib"],
+  "PandocCiter.ForgetUnusedBib": false,
+}

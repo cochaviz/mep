@@ -12,17 +12,16 @@ import shlex
 import logging
 import glob
 
-def _open_file(filename: str):
-    # open file first by trying to open in VSCode, then with the
-    # default pdf reader. Not sure whether this should be the other way around
-
-    try:
-        subprocess.run(["code", filename], check=True)
-    except subprocess.CalledProcessError:
+def _open_file(filename: str, programs=["code", "xdg-open"]):
+    for program in programs:
         try:
-            subprocess.run(["xdg-open", filename], check=True)
+            subprocess.run([program, filename], check=True)
+            return
         except subprocess.CalledProcessError:
-            logging.warning(f"Could not open {filename} using either 'code' or 'xdg-open'") 
+            continue
+
+    logging.warning(f"Could not open file {filename} with any of the following programs: {programs}")
+
 
 def _set_verbosity(level: str):
     numeric_level = getattr(logging, level.upper(), "WARNING")
@@ -120,8 +119,8 @@ def main(source: str, target: str,
                 \nEither declare the specific file you want to convert, or select a different folder.")
             exit(1)
     else:
-        source = os.path.dirname(source)
         source_files = [source]
+        source = os.path.dirname(source)
 
     # all resources should be located in the source folder
     options.append(f"--resource-path={source}")
@@ -138,7 +137,7 @@ def main(source: str, target: str,
             "--metadata=codeBlockCaptions"
         ]
 
-        if len(source_files) > 1:
+        if len(source_files) > 1 or os.path.exists(f"{source}/metadata.yaml"):
             options.append(f"--metadata-file={source}/metadata.yaml")
         if len(source_files) == 1 and "md" not in target:
             options.append(f"--shift-heading-level=-1")
@@ -147,7 +146,7 @@ def main(source: str, target: str,
         if "tex" in target:
             options.append("--standalone")
     else:
-        logging.error("It seems like you are trying to convert a non-(latex|markdown) file.")
+        logging.error(f"It seems like you are trying to convert a non-(latex|markdown) file: {source_files[0]}")
 
         if not input("Are you sure you want to do this? [y/N]:").lower() in {"y", "yes"}:
             logging.warning("Not processing further, exiting...")
@@ -170,8 +169,6 @@ def main(source: str, target: str,
                 source if len(source_files) > 1 else source_files[0]
                 )
             out_filename = f"{os.path.splitext(intermediate_filename)[0]}.{target}"
-
-    out_filename = f"{os.getcwd()}/{out_filename}"
 
     logging.info(f"Writing to {out_filename}...")
 

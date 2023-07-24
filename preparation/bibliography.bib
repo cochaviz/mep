@@ -1,0 +1,103 @@
+@misc{balunovicFairNormalizingFlows2022,
+  title = {Fair {{Normalizing Flows}}},
+  author = {Balunovi{\'c}, Mislav and Ruoss, Anian and Vechev, Martin},
+  year = {2022},
+  month = mar,
+  number = {arXiv:2106.05937},
+  eprint = {2106.05937},
+  primaryclass = {cs},
+  publisher = {{arXiv}},
+  urldate = {2023-07-24},
+  abstract = {Fair representation learning is an attractive approach that promises fairness of downstream predictors by encoding sensitive data. Unfortunately, recent work has shown that strong adversarial predictors can still exhibit unfairness by recovering sensitive attributes from these representations. In this work, we present Fair Normalizing Flows (FNF), a new approach offering more rigorous fairness guarantees for learned representations. Specifically, we consider a practical setting where we can estimate the probability density for sensitive groups. The key idea is to model the encoder as a normalizing flow trained to minimize the statistical distance between the latent representations of different groups. The main advantage of FNF is that its exact likelihood computation allows us to obtain guarantees on the maximum unfairness of any potentially adversarial downstream predictor. We experimentally demonstrate the effectiveness of FNF in enforcing various group fairness notions, as well as other attractive properties such as interpretability and transfer learning, on a variety of challenging real-world datasets.},
+  archiveprefix = {arxiv},
+  langid = {english},
+  keywords = {Computer Science - Artificial Intelligence,Computer Science - Machine Learning},
+  file = {/home/zohar/Zotero/storage/YPZPX5H4/Balunović et al. - 2022 - Fair Normalizing Flows.pdf}
+}
+
+@inproceedings{bonaertFastPreciseCertification2021,
+  title = {Fast and Precise Certification of Transformers},
+  booktitle = {Proceedings of the 42nd {{ACM SIGPLAN International Conference}} on {{Programming Language Design}} and {{Implementation}}},
+  author = {Bonaert, Gregory and Dimitrov, Dimitar I. and Baader, Maximilian and Vechev, Martin},
+  year = {2021},
+  month = jun,
+  pages = {466--481},
+  publisher = {{ACM}},
+  address = {{Virtual Canada}},
+  doi = {10.1145/3453483.3454056},
+  urldate = {2023-07-24},
+  abstract = {We present DeepT, a novel method for certifying Transformer networks based on abstract interpretation. The key idea behind DeepT is our new Multi-norm Zonotope abstract domain, an extension of the classical Zonotope designed to handle {$\mathscr{l}$}1 and {$\mathscr{l}$}2-norm bound perturbations. We introduce all Multi-norm Zonotope abstract transformers necessary to handle these complex networks, including the challenging softmax function and dot product.},
+  isbn = {978-1-4503-8391-2},
+  langid = {english},
+  file = {/home/zohar/Zotero/storage/D2UV9MSK/Bonaert et al. - 2021 - Fast and precise certification of transformers.pdf}
+}
+
+@article{dimitrovDataLeakageFederated,
+  title = {Data {{Leakage}} in {{Federated Averaging}}},
+  author = {Dimitrov, Dimitar I and Balunovi{\'c}, Mislav and Konstantinov, Nikola and Vechev, Martin},
+  abstract = {Recent attacks have shown that user data can be recovered from FedSGD updates, thus breaking privacy. However, these attacks are of limited practical relevance as federated learning typically uses the FedAvg algorithm. Compared to FedSGD, recovering data from FedAvg updates is much harder as: (i) the updates are computed at unobserved intermediate network weights, (ii) a large number of batches are used, and (iii) labels and network weights vary simultaneously across client steps. In this work, we propose a new optimization-based attack which successfully attacks FedAvg by addressing the above challenges. First, we solve the optimization problem using automatic differentiation that forces a simulation of the client's update that generates the unobserved parameters for the recovered labels and inputs to match the received client update. Second, we address the large number of batches by relating images from different epochs with a permutation invariant prior. Third, we recover the labels by estimating the parameters of existing FedSGD attacks at every FedAvg step. On the popular FEMNIST dataset, we demonstrate that on average we successfully recover {$>$}45\% of the client's images from realistic FedAvg updates computed on 10 local epochs of 10 batches each with 5 images, compared to only {$<$}10\% using the baseline. Our findings show many real-world federated learning implementations based on FedAvg are vulnerable.},
+  langid = {english},
+  file = {/home/zohar/Zotero/storage/GB6MX3I2/Dimitrov et al. - Data Leakage in Federated Averaging.pdf}
+}
+
+@article{dimitrovProvablyRobustAdversarial2022,
+  title = {Provably {{Robust Adversarial Examples}}},
+  author = {Dimitrov, Dimitar I and Singh, Gagandeep and Gehr, Timon and Vechev, Martin},
+  year = {2022},
+  abstract = {We introduce the concept of provably robust adversarial examples for deep neural networks \textendash{} connected input regions constructed from standard adversarial examples which are guaranteed to be robust to a set of real-world perturbations (such as changes in pixel intensity and geometric transformations). We present a novel method called PARADE for generating these regions in a scalable manner which works by iteratively refining the region initially obtained via sampling until a refined region is certified to be adversarial with existing state-of-the-art verifiers. At each step, a novel optimization procedure is applied to maximize the region's volume under the constraint that the convex relaxation of the network behavior with respect to the region implies a chosen bound on the certification objective. Our experimental evaluation shows the effectiveness of PARADE: it successfully finds large provably robust regions including ones containing {$\approx$} 10573 adversarial examples for pixel intensity and {$\approx$} 10599 for geometric perturbations. The provability enables our robust examples to be significantly more effective against state-of-theart defenses based on randomized smoothing than the individual attacks used to construct the regions.},
+  langid = {english},
+  file = {/home/zohar/Zotero/storage/K9MSD8IR/Dimitrov et al. - 2022 - PROVABLY ROBUST ADVERSARIAL EXAMPLES.pdf}
+}
+
+@misc{fischerOnlineRobustnessTraining2019,
+  title = {Online {{Robustness Training}} for {{Deep Reinforcement Learning}}},
+  author = {Fischer, Marc and Mirman, Matthew and Stalder, Steven and Vechev, Martin},
+  year = {2019},
+  month = nov,
+  number = {arXiv:1911.00887},
+  eprint = {1911.00887},
+  primaryclass = {cs, stat},
+  publisher = {{arXiv}},
+  urldate = {2023-07-24},
+  abstract = {In deep reinforcement learning (RL), adversarial attacks can trick an agent into unwanted states and disrupt training. We propose a system called Robust StudentDQN (RS-DQN), which permits online robustness training alongside Q networks, while preserving competitive performance. We show that RS-DQN can be combined with (i) state-of-the-art adversarial training and (ii) provably robust training to obtain an agent that is resilient to strong attacks during training and evaluation.},
+  archiveprefix = {arxiv},
+  langid = {english},
+  keywords = {Computer Science - Machine Learning,Statistics - Machine Learning},
+  file = {/home/zohar/Zotero/storage/UFXDLIWL/Fischer et al. - 2019 - Online Robustness Training for Deep Reinforcement .pdf}
+}
+
+@misc{fischerSharedCertificatesNeural2022,
+  title = {Shared {{Certificates}} for {{Neural Network Verification}}},
+  author = {Fischer, Marc and Sprecher, Christian and Dimitrov, Dimitar I. and Singh, Gagandeep and Vechev, Martin},
+  year = {2022},
+  month = dec,
+  number = {arXiv:2109.00542},
+  eprint = {2109.00542},
+  primaryclass = {cs},
+  publisher = {{arXiv}},
+  urldate = {2023-07-24},
+  abstract = {Existing neural network verifiers compute a proof that each input is handled correctly under a given perturbation by propagating a symbolic abstraction of reachable values at each layer. This process is repeated from scratch independently for each input (e.g., image) and perturbation (e.g., rotation), leading to an expensive overall proof effort when handling an entire dataset. In this work, we introduce a new method for reducing this verification cost without losing precision based on a key insight that abstractions obtained at intermediate layers for different inputs and perturbations can overlap or contain each other. Leveraging our insight, we introduce the general concept of shared certificates, enabling proof effort reuse across multiple inputs to reduce overall verification costs. We perform an extensive experimental evaluation to demonstrate the effectiveness of shared certificates in reducing the verification cost on a range of datasets and attack specifications on image classifiers including the popular patch and geometric perturbations. We release our implementation at https://github.com/eth-sri/proof-sharing.},
+  archiveprefix = {arxiv},
+  langid = {english},
+  keywords = {Computer Science - Cryptography and Security,Computer Science - Machine Learning},
+  note = {Comment: Extended version of our CAV'22 paper},
+  file = {/home/zohar/Zotero/storage/3SJR7LSK/Fischer et al. - 2022 - Shared Certificates for Neural Network Verificatio.pdf}
+}
+
+@inproceedings{gehrAI2SafetyRobustness2018,
+  title = {{{AI2}}: {{Safety}} and {{Robustness Certification}} of {{Neural Networks}} with {{Abstract Interpretation}}},
+  shorttitle = {{{AI2}}},
+  booktitle = {2018 {{IEEE Symposium}} on {{Security}} and {{Privacy}} ({{SP}})},
+  author = {Gehr, Timon and Mirman, Matthew and {Drachsler-Cohen}, Dana and Tsankov, Petar and Chaudhuri, Swarat and Vechev, Martin},
+  year = {2018},
+  month = may,
+  pages = {3--18},
+  publisher = {{IEEE}},
+  address = {{San Francisco, CA}},
+  doi = {10.1109/SP.2018.00058},
+  urldate = {2023-07-24},
+  abstract = {We present AI2, the first sound and scalable analyzer for deep neural networks. Based on overapproximation, AI2 can automatically prove safety properties (e.g., robustness) of realistic neural networks (e.g., convolutional neural networks). The key insight behind AI2 is to phrase reasoning about safety and robustness of neural networks in terms of classic abstract interpretation, enabling us to leverage decades of advances in that area. Concretely, we introduce abstract transformers that capture the behavior of fully connected and convolutional neural network layers with rectified linear unit activations (ReLU), as well as max pooling layers. This allows us to handle real-world neural networks, which are often built out of those types of layers. We present a complete implementation of AI2 together with an extensive evaluation on 20 neural networks. Our results demonstrate that: (i) AI2 is precise enough to prove useful specifications (e.g., robustness), (ii) AI2 can be used to certify the effectiveness of state-of-the-art defenses for neural networks, (iii) AI2 is significantly faster than existing analyzers based on symbolic analysis, which often take hours to verify simple fully connected networks, and (iv) AI2 can handle deep convolutional networks, which are beyond the reach of existing methods.},
+  isbn = {978-1-5386-4353-2},
+  langid = {english},
+  file = {/home/zohar/Zotero/storage/XSUXSQKR/Gehr et al. - 2018 - AI2 Safety and Robustness Certification of Neural.pdf}
+}
