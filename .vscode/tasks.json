@@ -1,0 +1,126 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Build document",
+      "type": "shell",
+      "command": "python3 ${workspaceFolder}/academic_markdown.py build ${relativeFile} ${input:target}",
+      "problemMatcher": [],
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "presentation": {
+        "echo": false,
+        "reveal": "silent",
+        "focus": true,
+        "panel": "shared",
+        "showReuseMessage": true
+      }
+    },
+    {
+      "label": "Build folder",
+      "type": "shell",
+      "command": "python3 ${workspaceFolder}/academic_markdown.py build ${relativeFileDirname} ${input:target}",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "presentation": {
+        "echo": false,
+        "reveal": "silent",
+        "focus": true,
+        "panel": "shared",
+        "showReuseMessage": true
+      }
+    },
+    {
+      "label": "Build document (Docker)",
+      "type": "shell",
+      "dependsOn": ["Docker Build"],
+      "command": "python3 ${workspaceFolder}/academic_markdown.py build --docker ${relativeFile} ${input:target}",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "presentation": {
+        "echo": false,
+        "reveal": "silent",
+        "focus": true,
+        "panel": "shared",
+        "showReuseMessage": true
+      }
+    },
+    {
+      "label": "Build folder (Docker)",
+      "type": "shell",
+      "dependsOn": ["Docker Build"],
+      "command": "python3 ${workspaceFolder}/academic_markdown.py build --docker ${relativeFileDirname} ${input:target}",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "presentation": {
+        "echo": false,
+        "reveal": "silent",
+        "focus": true,
+        "panel": "shared",
+        "showReuseMessage": true
+      }
+    },
+    {
+      "label": "Chech health (Local)",
+      "type": "shell",
+      "command": "python3 ${workspaceFolder}/academic_markdown.py check-health",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "presentation": {
+        "echo": false,
+        "reveal": "always",
+        "focus": true,
+        "panel": "shared",
+        "showReuseMessage": true
+      }
+    },
+    {
+      "label": "Chech health (Docker)",
+      "type": "shell",
+      "command": "python3 ${workspaceFolder}/academic_markdown.py check-health --docker",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "presentation": {
+        "echo": false,
+        "reveal": "always",
+        "focus": true,
+        "panel": "shared",
+        "showReuseMessage": true
+      }
+    },
+    {
+      "label": "Docker Build",
+      "type": "shell",
+      "command": "${workspaceFolder}/scripts/build_docker.sh",
+      "presentation": {
+        "echo": true,
+        "reveal": "silent",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": true
+      },
+      "problemMatcher": []
+    }
+  ],
+  "inputs": [
+    {
+      "id": "target",
+      "description": "Indicate the export file type",
+      "options": ["pdf", "html", "tex", "md"],
+      "default": "pdf",
+      "type": "pickString"
+    }
+  ]
+}
