@@ -1,9 +1,4 @@
----
-title: Preparation of Thesis - Exploration of Topics and Options
-author: Zohar Cochavi
-
-bibliography: bibliography.bib
----
+# Topic Exploration
 
 ## AI Safety - SRILAB (ETH Zurich)
 
