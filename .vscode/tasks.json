@@ -4,7 +4,11 @@
     {
       "label": "Build document",
       "type": "shell",
+<<<<<<< HEAD
       "command": "python3 ${workspaceFolder}/academic_markdown.py build ${relativeFile} ${input:target}",
+=======
+      "command": "academic_markdown build $useTectonic ${relativeFile} ${input:target}",
+>>>>>>> 36e34ce5d688ad0f6031d133421cac709756d06c
       "problemMatcher": [],
       "group": {
         "kind": "build",
@@ -21,7 +25,11 @@
     {
       "label": "Build folder",
       "type": "shell",
+<<<<<<< HEAD
       "command": "python3 ${workspaceFolder}/academic_markdown.py build ${relativeFileDirname} ${input:target}",
+=======
+      "command": "academic_markdown build $useTectonic ${relativeFileDirname} ${input:target}",
+>>>>>>> 36e34ce5d688ad0f6031d133421cac709756d06c
       "group": {
         "kind": "build",
         "isDefault": true
@@ -37,8 +45,13 @@
     {
       "label": "Build document (Docker)",
       "type": "shell",
+<<<<<<< HEAD
       "dependsOn": ["Docker Build"],
       "command": "python3 ${workspaceFolder}/academic_markdown.py build --docker ${relativeFile} ${input:target}",
+=======
+      // "dependsOn": ["Docker Build"],
+      "command": "academic_markdown build --docker ${relativeFile} ${input:target}",
+>>>>>>> 36e34ce5d688ad0f6031d133421cac709756d06c
       "group": {
         "kind": "build",
         "isDefault": false
@@ -54,8 +67,13 @@
     {
       "label": "Build folder (Docker)",
       "type": "shell",
+<<<<<<< HEAD
       "dependsOn": ["Docker Build"],
       "command": "python3 ${workspaceFolder}/academic_markdown.py build --docker ${relativeFileDirname} ${input:target}",
+=======
+      // "dependsOn": ["Docker Build"],
+      "command": "academic_markdown build --docker ${relativeFileDirname} ${input:target}",
+>>>>>>> 36e34ce5d688ad0f6031d133421cac709756d06c
       "group": {
         "kind": "build",
         "isDefault": false
@@ -71,7 +89,11 @@
     {
       "label": "Chech health (Local)",
       "type": "shell",
+<<<<<<< HEAD
       "command": "python3 ${workspaceFolder}/academic_markdown.py check-health",
+=======
+      "command": "academic_markdown check-health",
+>>>>>>> 36e34ce5d688ad0f6031d133421cac709756d06c
       "group": {
         "kind": "build",
         "isDefault": false
@@ -87,7 +109,11 @@
     {
       "label": "Chech health (Docker)",
       "type": "shell",
+<<<<<<< HEAD
       "command": "python3 ${workspaceFolder}/academic_markdown.py check-health --docker",
+=======
+      "command": "academic_markdown check-health --docker",
+>>>>>>> 36e34ce5d688ad0f6031d133421cac709756d06c
       "group": {
         "kind": "build",
         "isDefault": false
@@ -101,6 +127,7 @@
       }
     },
     {
+<<<<<<< HEAD
       "label": "Docker Build",
       "type": "shell",
       "command": "${workspaceFolder}/scripts/build_docker.sh",
@@ -112,6 +139,18 @@
         "showReuseMessage": true
       },
       "problemMatcher": []
+=======
+      "label": "Update template",
+      "type": "shell",
+      "command": "git stash && git remote add template git@github.com:cochaviz/academic_markdown.git || exit 1; git pull template main --allow-unrelated-histories && git add .devcontainer .vscode; git stash pop",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "shared",
+        "showReuseMessage": true
+      }
+>>>>>>> 36e34ce5d688ad0f6031d133421cac709756d06c
     }
   ],
   "inputs": [

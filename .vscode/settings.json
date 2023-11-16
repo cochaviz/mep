@@ -1,4 +1,12 @@
 {
+<<<<<<< HEAD
   "PandocCiter.DefaultBibs": ["preparation/bibliography.bib"],
   "PandocCiter.ForgetUnusedBib": false,
+=======
+  "PandocCiter.UseDefaultBib": true,
+  "PandocCiter.DefaultBibs": ["workflow/bibliography.bib"],
+
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "pandocMarkdownPreview.extraPandocArguments": "--citeproc -F pandoc-crossref $([ -f ./metadata.yaml ] && echo \"--metadata=metadata.yaml\") -f markdown+mark"
+>>>>>>> 36e34ce5d688ad0f6031d133421cac709756d06c
 }

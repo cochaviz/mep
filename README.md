@@ -1,18 +1,29 @@
 # Academic Markdown - Tools and Guide
 
+<<<<<<< HEAD
 [![Open in Dev
 Containers](https://img.shields.io/static/v1?label=Dev%20Containers&message=Open&color=blue&logo=visualstudiocode)](https://vscode.dev/redirect?url=vscode://ms-vscode-remote.remote-containers/cloneInVolume?url=https://github.com/cochaviz/academic_markdown)
 
+=======
+>>>>>>> 36e34ce5d688ad0f6031d133421cac709756d06c
 This repository contains my workflow for using markdown and `pandoc` for
 academic writing and serves as a template for that workflow. If you’re
 just looking to try it out, press the green button that says *Use This
 Template* and open it in a codespace. Otherwise, continue reading to set
 up a more permanent version of this environment.
 
+<<<<<<< HEAD
 In this README, you will find instructions on how to use `build.py` and
 the provided `Dockerfile`. That is, how to set up your system to
 successfully build markdown files to `pdf`, $\LaTeX$, `HTML`, and
 markdown (that is Github-flavoured markdown with rendered citations).
+=======
+In this README, you will find instructions on how to use
+`academic_markdown` and the provided `Dockerfile`. That is, how to set
+up your system to successfully build markdown files to `pdf`, LaTeX,
+`HTML`, and markdown (that is Github-flavoured markdown with rendered
+citations).
+>>>>>>> 36e34ce5d688ad0f6031d133421cac709756d06c
 
 In *Workflow*, I will show how I use this repository and VSCode in
 conjunction with Zotero to write articles, surveys, etc. This is
@@ -27,7 +38,11 @@ For my writing, I wanted to be able to do the following things:
 - Work locally (preferably VSCode).
 - Write academic papers and reports (e.g. work with Zotero and create
   figures).
+<<<<<<< HEAD
 - Create $\LaTeX$, `markdown`, and pdf files.
+=======
+- Create LaTeX, `markdown`, and pdf files.
+>>>>>>> 36e34ce5d688ad0f6031d133421cac709756d06c
 - Focus on writing, not on markup.
 
 My conclusion was that writing in markdown and using `pandoc` to export
@@ -41,12 +56,22 @@ are available *for free*.
 To start, you can choose to:
 
 - [Use the provided Dockerfile](https://www.docker.com/) to create a
+<<<<<<< HEAD
   container in which the files are built (use the `--docker` flag).
+=======
+  container in which the files are built (use the `--docker` flag), in
+  conjunction with the `academic_markdown` command line interface.
+>>>>>>> 36e34ce5d688ad0f6031d133421cac709756d06c
 
 - Install the required dependencies ([Python
   (3.11)](https://www.python.org/), [`pandoc`](https://pandoc.org/),
   [`pandoc-crossref`](https://github.com/lierdakil/pandoc-crossref), and
+<<<<<<< HEAD
   [LaTeX](https://www.latex-project.or/)) yourself.
+=======
+  [LaTeX](https://www.latex-project.or/)), etc. yourself. (Check
+  `academic_markdown check-health` for the requirements).
+>>>>>>> 36e34ce5d688ad0f6031d133421cac709756d06c
 
 - Open this template in a Github codespace (green button in the
   top-right of the repository).
@@ -58,11 +83,22 @@ If you are on Github, using codespaces is definitely the easiest if
 you’d just like to have a look around. Be aware that this might take a
 while to set up (about 2 minutes), but only needs to be done once.
 
+<<<<<<< HEAD
+=======
+If you’re not directly using the devcontainer, you’ll have to install
+the `academic_markdown` cli yourself with
+
+``` shell
+python3 -m pip install academic_markdown
+```
+
+>>>>>>> 36e34ce5d688ad0f6031d133421cac709756d06c
 ### Building
 
 When using VSCode, there are [Build
 tasks](https://code.visualstudio.com/Docs/editor/tasks) that automate
 this process *based on the currently opened file*. This is just a proxy
+<<<<<<< HEAD
 for `academic_markdown.py`, and can also be run manually.
 
 In case you’d like to build manually, refer to the usage of
@@ -82,11 +118,32 @@ positional arguments:
 
 options:
   -h, --help            show this help message and exit
+=======
+for `academic_markdown`, and can also be run manually.
+
+In case you’d like to build manually, refer to the usage of
+`academic_markdown` in the command line.
+
+``` txt
+Usage: academic_markdown [OPTIONS] COMMAND [ARGS]...                                                          
+                                                                                                               
+╭─ Options ───────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ --install-completion          Install completion for the current shell.                                     │
+│ --show-completion             Show completion for the current shell, to copy it or customize the            │
+│                               installation.                                                                 │
+│ --help                        Show this message and exit.                                                   │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Commands ──────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ build                                                                                                       │
+│ check-health                                                                                                │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+>>>>>>> 36e34ce5d688ad0f6031d133421cac709756d06c
 ```
 
 Specifically, the `build` sub-command.
 
 ``` txt
+<<<<<<< HEAD
 $ python academic_markdown.py build -h
 
 usage: academic_markdown.py build [-h] [--options OPTIONS] [--pandoc PANDOC] [--docker] [--check-health] [--verbosity {ERROR,WARNING,INFO,DEBUG}] [--do-not-open] [--tectonic] source target
@@ -108,6 +165,23 @@ options:
 ```
 
 For concrete example of how to use this, refer to the [VSCode
+=======
+╭─ Arguments ─────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ *    source      TEXT  [default: None] [required]                                                           │
+│ *    target      TEXT  [default: None] [required]                                                           │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ───────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ --options                                TEXT                                                               │
+│ --docker           --no-docker                 [default: no-docker]                                         │
+│ --pandoc                                 TEXT  [default: pandoc]                                            │
+│ --tectonic         --no-tectonic               [default: no-tectonic]                                       │
+│ --open-rendered    --no-open-rendered          [default: no-open-rendered]                                  │
+│ --help                                         Show this message and exit.                                  │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+```
+
+For concrete examples of how to use this, refer to the [VSCode
+>>>>>>> 36e34ce5d688ad0f6031d133421cac709756d06c
 tasks](.vscode/tasks.json). Each of these tasks provides a different
 example of how to use the script.
 
@@ -121,6 +195,7 @@ be set up similarly with any IDE.
 #### Project Structure
 
 I imagine two ways of writing which I have often encountered myself. The
+<<<<<<< HEAD
 first is a situation in which you only need to write a small report. The
 second is a situation where multiple files are required for that single
 final document to avoid one incredibly large document.
@@ -138,19 +213,50 @@ optional and front matter can also be used.
     ├── bibliography.bib
     ├── images
     └── [metadata.yaml] // optional, preferrably use frontmatter
+=======
+first is a situation in which you only need to write one or multiple
+smaller reports (see lst. 1). The second is a situation where multiple
+files are required for that single final document to avoid one
+incredibly large document (see lst. 2).
+
+<div id="lst:single_file_setup" class="listing bash">
+
+Listing 1: Setup with a single file. Metadata regarding the markdown
+files can be found in their respective frontmatter. When building a
+‘folder’ without a `metadata.yaml` all the files will be rendered
+separately.
+
+``` bash
+├── .devcontainer
+├── .vscode
+└── docs
+    ├── my_report.md
+    ├── bibliography.bib
+    └── images
+>>>>>>> 36e34ce5d688ad0f6031d133421cac709756d06c
 ```
 
 </div>
 
+<<<<<<< HEAD
 <div id="lst:multiple_file_setup" class="listing txt">
+=======
+<div id="lst:multiple_file_setup" class="listing bash">
+>>>>>>> 36e34ce5d688ad0f6031d133421cac709756d06c
 
 Listing 2: Setup with multiple files. Here, `pandoc` would use the
 frontmatter of the first document, if available, but I think the
 `metadata.yaml` should be provided. This separates configurations from
 content in larger projects.
 
+<<<<<<< HEAD
 ``` txt
 ├── academic_markdown.py
+=======
+``` bash
+├── .devcontainer
+├── .vscode
+>>>>>>> 36e34ce5d688ad0f6031d133421cac709756d06c
 └── docs
     ├── 01_introduction.md
     ├── 02_methodology.md
@@ -162,11 +268,23 @@ content in larger projects.
 
 </div>
 
+<<<<<<< HEAD
 When using `academic_markdown.py`, these situations are determined by
 the number of files in the target folder. When there is only one, the
 first situation is assumed, and `metadata.yaml` is optional. When there
 are more files, the second situation is assumed, and `metadata.yaml` is
 required.
+=======
+When using `academic_markdown`, these situations are distinguished by
+the presence of the `metadata.yaml` file. When building a single
+document, the situations are barely distinguishable, save for the use of
+`metadata.yaml` to provide pandoc with metadata if it is present. When
+building a folder, however, the presence of the `metadata.yaml` file
+will determine whether a single document or multiple are produced. In
+the case a `metadata.yaml` file is found, all the markdown files in the
+folder are concatenated into one rendered file. When it is absent, each
+document is rendered separately.
+>>>>>>> 36e34ce5d688ad0f6031d133421cac709756d06c
 
 #### Integration with VSCode
 
@@ -183,6 +301,7 @@ required.
 ## Motivation
 
 My reasoning is as follows: Markdown is a great format to write in but
+<<<<<<< HEAD
 lacks configurability. $\LaTeX$ is great for configurability, but rather
 hard to write in (updates take quite a while to render, and the syntax
 is sometimes rather distracting). One should focus on writing first, and
@@ -190,6 +309,15 @@ then make small adjustments where necessary. For this reason, I first
 write in Markdown and then convert to PDF through $\LaTeX$. In case I
 would like to customize certain aspects of the exported file, I export
 to $\LaTeX$ and then to pdf.
+=======
+lacks configurability. LaTeX is great for configurability, but rather
+hard to write in (updates take quite a while to render, and the syntax
+is sometimes rather distracting). One should focus on writing first, and
+then make small adjustments where necessary. For this reason, I first
+write in Markdown and then convert to PDF through LaTeX. In case I would
+like to customize certain aspects of the exported file, I export to
+LaTeX and then to pdf.
+>>>>>>> 36e34ce5d688ad0f6031d133421cac709756d06c
 
 While all of this is supported by `pandoc`, finding a system to work
 with this is not necessarily trivial. This repository should provide
@@ -198,6 +326,7 @@ while still allowing for personalization.
 
 ## Roadmap
 
+<<<<<<< HEAD
 - [x] **Dockerized Environment**. Lightweight dockerized environment
   that allows for a full replacement of `pandoc`. Also automatically
   downloads missing latex packages.
@@ -210,12 +339,35 @@ while still allowing for personalization.
   This could be useful for ensuring rendered documents are always
   up-to-date, and avoiding the necessity for local builds. Could,
   perhaps, also be faster than building locally and pushing.
+=======
+- [x] **Dockerized environment**. Lightweight dockerized environment
+  that allows for a full replacement of `pandoc`. Also automatically
+  downloads missing latex packages.
+
+- [x] **Devcontainer environment**. Docker container optimized for
+  devcontainer (include Microsoft goodies, and reduce Docker image build
+  times). And include a range of useful extensions.
+
+- [x] **PyPI Package**. Academic Markdown is now available as a `pypi`
+  package! This makes it much easier to install and update the tool.
+  Check its progress on
+  [academic_markdown_cli](https://www.github.com/cochaviz/academic_markdown_cli)
+>>>>>>> 36e34ce5d688ad0f6031d133421cac709756d06c
 
 - [ ] **Full Manual**. A complete and detailed explanation of how this
   workflow can be used. This should be an instruction for any person
   that would like to use markdown for serious writing. It should provide
   an introduction to `pandoc`, docker, and VSCode.
 
+<<<<<<< HEAD
+=======
+- [ ] **Github Actions for building**. Use GitHub Actions to
+  automatically build to PDF, LaTeX according to user preferences. This
+  could be useful for ensuring rendered documents are always up-to-date,
+  and avoiding the necessity for local builds. Could, perhaps, also be
+  faster than building locally and pushing.
+
+>>>>>>> 36e34ce5d688ad0f6031d133421cac709756d06c
 - [ ] **Independent VSCode Extension**. A VSCode extension, independent
   of `build.py`. This could be an improved user experience for existing
   VSCode users. This template should, however, still be as usable

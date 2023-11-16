@@ -32,6 +32,37 @@
   file = {/home/zohar/Zotero/storage/D2UV9MSK/Bonaert et al. - 2021 - Fast and precise certification of transformers.pdf}
 }
 
+@article{carliniExtractingTrainingData2023,
+  title = {Extracting {{Training Data}} from {{Diffusion Models}}},
+  author = {Carlini, Nicholas and Hayes, Jamie and Nasr, Milad and Jagielski, Matthew and Sehwag, Vikash and Tram{\`e}r, Florian and Balle, Borja and Ippolito, Daphne and Wallace, Eric},
+  year = {2023},
+  publisher = {{arXiv}},
+  doi = {10.48550/ARXIV.2301.13188},
+  urldate = {2023-10-08},
+  abstract = {Image diffusion models such as DALL-E 2, Imagen, and Stable Diffusion have attracted significant attention due to their ability to generate high-quality synthetic images. In this work, we show that diffusion models memorize individual images from their training data and emit them at generation time. With a generate-and-filter pipeline, we extract over a thousand training examples from state-of-the-art models, ranging from photographs of individual people to trademarked company logos. We also train hundreds of diffusion models in various settings to analyze how different modeling and data decisions affect privacy. Overall, our results show that diffusion models are much less private than prior generative models such as GANs, and that mitigating these vulnerabilities may require new advances in privacy-preserving training.},
+  copyright = {arXiv.org perpetual, non-exclusive license},
+  keywords = {Computer Vision and Pattern Recognition (cs.CV),Cryptography and Security (cs.CR),FOS: Computer and information sciences,Machine Learning (cs.LG)},
+  note = {[TLDR] The results show that diffusion models are much less private than prior generative models such as GANs, and that mitigating these vulnerabilities may require new advances in privacy-preserving training.}
+}
+
+@misc{dengJailbreakerAutomatedJailbreak2023,
+  title = {Jailbreaker: {{Automated Jailbreak Across Multiple Large Language Model Chatbots}}},
+  shorttitle = {Jailbreaker},
+  author = {Deng, Gelei and Liu, Yi and Li, Yuekang and Wang, Kailong and Zhang, Ying and Li, Zefeng and Wang, Haoyu and Zhang, Tianwei and Liu, Yang},
+  year = {2023},
+  month = jul,
+  number = {arXiv:2307.08715},
+  eprint = {2307.08715},
+  primaryclass = {cs},
+  publisher = {{arXiv}},
+  urldate = {2023-10-22},
+  abstract = {The landscape of Artificial Intelligence (AI) services has been significantly influenced by the rapid proliferation of Large Language Models (LLMs), primarily due to their remarkable proficiency in comprehending, generating, and completing text in a manner that mirrors human interaction. Among these services, LLM-based chatbots have gained widespread popularity due to their ability to facilitate smooth and intuitive humanmachine exchanges. However, their susceptibility to jailbreak attacks \textemdash{} attempts by malicious users to prompt sensitive or harmful responses against service guidelines \textemdash{} remains a critical concern. Despite numerous efforts to expose these weak points, our research presented in this paper indicates that current strategies fall short in effectively targeting mainstream LLM chatbots. This ineffectiveness can be largely attributed to undisclosed defensive measures, implemented by service providers to thwart such exploitative attempts.},
+  archiveprefix = {arxiv},
+  langid = {english},
+  keywords = {Computer Science - Cryptography and Security},
+  file = {/home/zohar/Zotero/storage/J7SFTSB8/Deng et al. - 2023 - Jailbreaker Automated Jailbreak Across Multiple L.pdf}
+}
+
 @article{dimitrovDataLeakageFederated,
   title = {Data {{Leakage}} in {{Federated Averaging}}},
   author = {Dimitrov, Dimitar I and Balunovi{\'c}, Mislav and Konstantinov, Nikola and Vechev, Martin},
@@ -47,6 +78,41 @@
   abstract = {We introduce the concept of provably robust adversarial examples for deep neural networks \textendash{} connected input regions constructed from standard adversarial examples which are guaranteed to be robust to a set of real-world perturbations (such as changes in pixel intensity and geometric transformations). We present a novel method called PARADE for generating these regions in a scalable manner which works by iteratively refining the region initially obtained via sampling until a refined region is certified to be adversarial with existing state-of-the-art verifiers. At each step, a novel optimization procedure is applied to maximize the region's volume under the constraint that the convex relaxation of the network behavior with respect to the region implies a chosen bound on the certification objective. Our experimental evaluation shows the effectiveness of PARADE: it successfully finds large provably robust regions including ones containing {$\approx$} 10573 adversarial examples for pixel intensity and {$\approx$} 10599 for geometric perturbations. The provability enables our robust examples to be significantly more effective against state-of-theart defenses based on randomized smoothing than the individual attacks used to construct the regions.},
   langid = {english},
   file = {/home/zohar/Zotero/storage/K9MSD8IR/Dimitrov et al. - 2022 - PROVABLY ROBUST ADVERSARIAL EXAMPLES.pdf}
+}
+
+@misc{duanAreDiffusionModels2023,
+  title = {Are {{Diffusion Models Vulnerable}} to {{Membership Inference Attacks}}?},
+  author = {Duan, Jinhao and Kong, Fei and Wang, Shiqi and Shi, Xiaoshuang and Xu, Kaidi},
+  year = {2023},
+  month = may,
+  number = {arXiv:2302.01316},
+  eprint = {2302.01316},
+  primaryclass = {cs},
+  publisher = {{arXiv}},
+  doi = {10.48550/arXiv.2302.01316},
+  urldate = {2023-10-08},
+  abstract = {Diffusion-based generative models have shown great potential for image synthesis, but there is a lack of research on the security and privacy risks they may pose. In this paper, we investigate the vulnerability of diffusion models to Membership Inference Attacks (MIAs), a common privacy concern. Our results indicate that existing MIAs designed for GANs or VAE are largely ineffective on diffusion models, either due to inapplicable scenarios (e.g., requiring the discriminator of GANs) or inappropriate assumptions (e.g., closer distances between synthetic samples and member samples). To address this gap, we propose Step-wise Error Comparing Membership Inference (SecMI), a query-based MIA that infers memberships by assessing the matching of forward process posterior estimation at each timestep. SecMI follows the common overfitting assumption in MIA where member samples normally have smaller estimation errors, compared with hold-out samples. We consider both the standard diffusion models, e.g., DDPM, and the text-to-image diffusion models, e.g., Latent Diffusion Models and Stable Diffusion. Experimental results demonstrate that our methods precisely infer the membership with high confidence on both of the two scenarios across multiple different datasets. Code is available at https://github.com/jinhaoduan/SecMI.},
+  archiveprefix = {arxiv},
+  keywords = {Computer Science - Artificial Intelligence,Computer Science - Computer Vision and Pattern Recognition,Computer Science - Cryptography and Security,Computer Science - Machine Learning,diffusion model},
+  note = {Comment: To appear in ICML 2023},
+  file = {/home/zohar/Zotero/storage/8ZQL55BT/Duan et al. - 2023 - Are Diffusion Models Vulnerable to Membership Infe.pdf;/home/zohar/Zotero/storage/6N3VAFMK/2302.html}
+}
+
+@misc{dubinskiMoreRealisticMembership2023,
+  title = {Towards {{More Realistic Membership Inference Attacks}} on {{Large Diffusion Models}}},
+  author = {Dubi{\'n}ski, Jan and Kowalczuk, Antoni and Pawlak, Stanis{\l}aw and Rokita, Przemys{\l}aw and Trzci{\'n}ski, Tomasz and Morawiecki, Pawe{\l}},
+  year = {2023},
+  month = jun,
+  number = {arXiv:2306.12983},
+  eprint = {2306.12983},
+  primaryclass = {cs},
+  publisher = {{arXiv}},
+  urldate = {2023-10-08},
+  abstract = {Generative diffusion models, including Stable Diffusion and Midjourney, can generate visually appealing, diverse, and high-resolution images for various applications. These models are trained on billions of internet-sourced images, raising significant concerns about the potential unauthorized use of copyright-protected images. In this paper, we examine whether it is possible to determine if a specific image was used in the training set, a problem known in the cybersecurity community and referred to as a membership inference attack. Our focus is on Stable Diffusion, and we address the challenge of designing a fair evaluation framework to answer this membership question. We propose a methodology to establish a fair evaluation setup and apply it to Stable Diffusion, enabling potential extensions to other generative models. Utilizing this evaluation setup, we execute membership attacks (both known and newly introduced). Our research reveals that previously proposed evaluation setups do not provide a full understanding of the effectiveness of membership inference attacks. We conclude that the membership inference attack remains a significant challenge for large diffusion models (often deployed as black-box systems), indicating that related privacy and copyright issues will persist in the foreseeable future.},
+  archiveprefix = {arxiv},
+  langid = {english},
+  keywords = {Computer Science - Computer Vision and Pattern Recognition,Computer Science - Cryptography and Security,Computer Science - Machine Learning},
+  file = {/home/zohar/Zotero/storage/S2V5MR7D/Dubiński et al. - 2023 - Towards More Realistic Membership Inference Attack.pdf}
 }
 
 @misc{fischerOnlineRobustnessTraining2019,
@@ -100,4 +166,137 @@
   isbn = {978-1-5386-4353-2},
   langid = {english},
   file = {/home/zohar/Zotero/storage/XSUXSQKR/Gehr et al. - 2018 - AI2 Safety and Robustness Certification of Neural.pdf}
+}
+
+@inproceedings{koPracticalMembershipInference2023,
+  title = {Practical {{Membership Inference Attacks Against Large-Scale Multi-Modal Models}}: {{A Pilot Study}}},
+  shorttitle = {Practical {{Membership Inference Attacks Against Large-Scale Multi-Modal Models}}},
+  booktitle = {Proceedings of the {{IEEE}}/{{CVF International Conference}} on {{Computer Vision}}},
+  author = {Ko, Myeongseob and Jin, Ming and Wang, Chenguang and Jia, Ruoxi},
+  year = {2023},
+  pages = {4871--4881},
+  urldate = {2023-10-08},
+  langid = {english},
+  file = {/home/zohar/Zotero/storage/UFET77QY/Ko et al. - 2023 - Practical Membership Inference Attacks Against Lar.pdf}
+}
+
+@misc{liMultistepJailbreakingPrivacy2023,
+  title = {Multi-Step {{Jailbreaking Privacy Attacks}} on {{ChatGPT}}},
+  author = {Li, Haoran and Guo, Dadi and Fan, Wei and Xu, Mingshi and Huang, Jie and Meng, Fanpu and Song, Yangqiu},
+  year = {2023},
+  month = may,
+  number = {arXiv:2304.05197},
+  eprint = {2304.05197},
+  primaryclass = {cs},
+  publisher = {{arXiv}},
+  urldate = {2023-10-22},
+  abstract = {With the rapid progress of large language models (LLMs), many downstream NLP tasks can be well solved given appropriate prompts. Though model developers and researchers work hard on dialog safety to avoid generating harmful content from LLMs, it is still challenging to steer AI-generated content (AIGC) for the human good. As powerful LLMs are devouring existing text data from various domains (e.g., GPT-3 is trained on 45TB texts), it is natural to doubt whether the private information is included in the training data and what privacy threats can these LLMs and their downstream applications bring. In this paper, we study the privacy threats from OpenAI's ChatGPT and the New Bing enhanced by ChatGPT and show that application-integrated LLMs may cause new privacy threats. To this end, we conduct extensive experiments to support our claims and discuss LLMs' privacy implications.},
+  archiveprefix = {arxiv},
+  langid = {english},
+  keywords = {Computer Science - Computation and Language,Computer Science - Cryptography and Security},
+  note = {Comment: Updated with more experiments and improved writing},
+  file = {/home/zohar/Zotero/storage/366GNSEA/Li et al. - 2023 - Multi-step Jailbreaking Privacy Attacks on ChatGPT.pdf}
+}
+
+@misc{matsumotoMembershipInferenceAttacks2023,
+  title = {Membership {{Inference Attacks}} against {{Diffusion Models}}},
+  author = {Matsumoto, Tomoya and Miura, Takayuki and Yanai, Naoto},
+  year = {2023},
+  month = mar,
+  number = {arXiv:2302.03262},
+  eprint = {2302.03262},
+  primaryclass = {cs},
+  publisher = {{arXiv}},
+  doi = {10.48550/arXiv.2302.03262},
+  urldate = {2023-10-08},
+  abstract = {Diffusion models have attracted attention in recent years as innovative generative models. In this paper, we investigate whether a diffusion model is resistant to a membership inference attack, which evaluates the privacy leakage of a machine learning model. We primarily discuss the diffusion model from the standpoints of comparison with a generative adversarial network (GAN) as conventional models and hyperparameters unique to the diffusion model, i.e., time steps, sampling steps, and sampling variances. We conduct extensive experiments with DDIM as a diffusion model and DCGAN as a GAN on the CelebA and CIFAR-10 datasets in both white-box and black-box settings and then confirm if the diffusion model is comparably resistant to a membership inference attack as GAN. Next, we demonstrate that the impact of time steps is significant and intermediate steps in a noise schedule are the most vulnerable to the attack. We also found two key insights through further analysis. First, we identify that DDIM is vulnerable to the attack for small sample sizes instead of achieving a lower FID. Second, sampling steps in hyperparameters are important for resistance to the attack, whereas the impact of sampling variances is quite limited.},
+  archiveprefix = {arxiv},
+  keywords = {Computer Science - Cryptography and Security,Computer Science - Machine Learning},
+  file = {/home/zohar/Zotero/storage/KTZGAUWA/Matsumoto et al. - 2023 - Membership Inference Attacks against Diffusion Mod.pdf;/home/zohar/Zotero/storage/3INDNV4R/2302.html}
+}
+
+@misc{robeySmoothLLMDefendingLarge2023,
+  title = {{{SmoothLLM}}: {{Defending Large Language Models Against Jailbreaking Attacks}}},
+  shorttitle = {{{SmoothLLM}}},
+  author = {Robey, Alexander and Wong, Eric and Hassani, Hamed and Pappas, George J.},
+  year = {2023},
+  month = oct,
+  number = {arXiv:2310.03684},
+  eprint = {2310.03684},
+  primaryclass = {cs, stat},
+  publisher = {{arXiv}},
+  urldate = {2023-10-22},
+  abstract = {Despite efforts to align large language models (LLMs) with human values, widely-used LLMs such as GPT, Llama, Claude, and PaLM are susceptible to jailbreaking attacks, wherein an adversary fools a targeted LLM into generating objectionable content. To address this vulnerability, we propose SmoothLLM, the first algorithm designed to mitigate jailbreaking attacks on LLMs. Based on our finding that adversariallygenerated prompts are brittle to character-level changes, our defense first randomly perturbs multiple copies of a given input prompt, and then aggregates the corresponding predictions to detect adversarial inputs. SmoothLLM reduces the attack success rate on numerous popular LLMs to below one percentage point, avoids unnecessary conservatism, and admits provable guarantees on attack mitigation. Moreover, our defense uses exponentially fewer queries than existing attacks and is compatible with any LLM.},
+  archiveprefix = {arxiv},
+  langid = {english},
+  keywords = {Computer Science - Artificial Intelligence,Computer Science - Machine Learning,Statistics - Machine Learning},
+  file = {/home/zohar/Zotero/storage/7J6EZ9KU/Robey et al. - 2023 - SmoothLLM Defending Large Language Models Against.pdf}
+}
+
+@misc{wuMembershipInferenceAttacks2022a,
+  title = {Membership {{Inference Attacks Against Text-to-image Generation Models}}},
+  author = {Wu, Yixin and Yu, Ning and Li, Zheng and Backes, Michael and Zhang, Yang},
+  year = {2022},
+  month = oct,
+  number = {arXiv:2210.00968},
+  eprint = {2210.00968},
+  primaryclass = {cs},
+  publisher = {{arXiv}},
+  doi = {10.48550/arXiv.2210.00968},
+  urldate = {2023-10-08},
+  abstract = {Text-to-image generation models have recently attracted unprecedented attention as they unlatch imaginative applications in all areas of life. However, developing such models requires huge amounts of data that might contain privacy-sensitive information, e.g., face identity. While privacy risks have been extensively demonstrated in the image classification and GAN generation domains, privacy risks in the text-to-image generation domain are largely unexplored. In this paper, we perform the first privacy analysis of text-to-image generation models through the lens of membership inference. Specifically, we propose three key intuitions about membership information and design four attack methodologies accordingly. We conduct comprehensive evaluations on two mainstream text-to-image generation models including sequence-to-sequence modeling and diffusion-based modeling. The empirical results show that all of the proposed attacks can achieve significant performance, in some cases even close to an accuracy of 1, and thus the corresponding risk is much more severe than that shown by existing membership inference attacks. We further conduct an extensive ablation study to analyze the factors that may affect the attack performance, which can guide developers and researchers to be alert to vulnerabilities in text-to-image generation models. All these findings indicate that our proposed attacks pose a realistic privacy threat to the text-to-image generation models.},
+  archiveprefix = {arxiv},
+  keywords = {Computer Science - Cryptography and Security,Computer Science - Machine Learning,diffusion model},
+  file = {/home/zohar/Zotero/storage/8YQPPP4D/Wu et al. - 2022 - Membership Inference Attacks Against Text-to-image.pdf;/home/zohar/Zotero/storage/UV8JK386/2210.html}
+}
+
+@misc{yangDawnLMMsPreliminary2023,
+  title = {The {{Dawn}} of {{LMMs}}: {{Preliminary Explorations}} with {{GPT-4V}}(Ision)},
+  shorttitle = {The {{Dawn}} of {{LMMs}}},
+  author = {Yang, Zhengyuan and Li, Linjie and Lin, Kevin and Wang, Jianfeng and Lin, Chung-Ching and Liu, Zicheng and Wang, Lijuan},
+  year = {2023},
+  month = sep,
+  number = {arXiv:2309.17421},
+  eprint = {2309.17421},
+  primaryclass = {cs},
+  publisher = {{arXiv}},
+  doi = {10.48550/arXiv.2309.17421},
+  urldate = {2023-10-08},
+  abstract = {Large multimodal models (LMMs) extend large language models (LLMs) with multi-sensory skills, such as visual understanding, to achieve stronger generic intelligence. In this paper, we analyze the latest model, GPT-4V(ision), to deepen the understanding of LMMs. The analysis focuses on the intriguing tasks that GPT-4V can perform, containing test samples to probe the quality and genericity of GPT-4V's capabilities, its supported inputs and working modes, and the effective ways to prompt the model. In our approach to exploring GPT-4V, we curate and organize a collection of carefully designed qualitative samples spanning a variety of domains and tasks. Observations from these samples demonstrate that GPT-4V's unprecedented ability in processing arbitrarily interleaved multimodal inputs and the genericity of its capabilities together make GPT-4V a powerful multimodal generalist system. Furthermore, GPT-4V's unique capability of understanding visual markers drawn on input images can give rise to new human-computer interaction methods such as visual referring prompting. We conclude the report with in-depth discussions on the emerging application scenarios and the future research directions for GPT-4V-based systems. We hope that this preliminary exploration will inspire future research on the next-generation multimodal task formulation, new ways to exploit and enhance LMMs to solve real-world problems, and gaining better understanding of multimodal foundation models.},
+  archiveprefix = {arxiv},
+  keywords = {Computer Science - Computation and Language,Computer Science - Computer Vision and Pattern Recognition},
+  file = {/home/zohar/Zotero/storage/SLJKVVBJ/Yang et al. - 2023 - The Dawn of LMMs Preliminary Explorations with GP.pdf;/home/zohar/Zotero/storage/IJ5L5JKS/2309.html}
+}
+
+@misc{yuGPTFUZZERRedTeaming2023,
+  title = {{{GPTFUZZER}}: {{Red Teaming Large Language Models}} with {{Auto-Generated Jailbreak Prompts}}},
+  shorttitle = {{{GPTFUZZER}}},
+  author = {Yu, Jiahao and Lin, Xingwei and Yu, Zheng and Xing, Xinyu},
+  year = {2023},
+  month = oct,
+  number = {arXiv:2309.10253},
+  eprint = {2309.10253},
+  primaryclass = {cs},
+  publisher = {{arXiv}},
+  urldate = {2023-10-22},
+  abstract = {Content warning: This paper contains unfiltered content generated by LLMs that may be offensive to readers. Large language models (LLMs) have recently experienced tremendous popularity and are widely used from casual conversations to AI-driven programming. However, despite their considerable success, LLMs are not entirely reliable and can give detailed guidance on how to conduct harmful or illegal activities. While safety measures can reduce the risk of such outputs, adversarial ``jailbreak'' attacks can still exploit LLMs to produce harmful content. These jailbreak templates are typically manually crafted, making large-scale testing challenging. In this paper, we introduce GPTFUZZER, a novel blackbox jailbreak fuzzing framework inspired by the AFL fuzzing framework. Instead of manual engineering, GPTFUZZER automates the generation of jailbreak templates for red-teaming LLMs. At its core, GPTFUZZER starts with human-written templates as initial seeds, then mutates them to produce new templates. We detail three key components of GPTFUZZER: a seed selection strategy for balancing efficiency and variability, mutate operators for creating semantically equivalent or similar sentences, and a judgment model to assess the success of a jailbreak attack.},
+  archiveprefix = {arxiv},
+  langid = {english},
+  keywords = {Computer Science - Artificial Intelligence},
+  file = {/home/zohar/Zotero/storage/KRLCEWG9/2309.10253.pdf}
+}
+
+@misc{zengOpenAttackOpensourceTextual2020,
+  title = {{{OpenAttack}}: {{An Open-source Textual Adversarial Attack Toolkit}}},
+  shorttitle = {{{OpenAttack}}},
+  author = {Zeng, Guoyang and Qi, Fanchao and Zhou, Qianrui and Zhang, Tingji and Ma, Zixian and Hou, Bairu and Zang, Yuan and Liu, Zhiyuan and Sun, Maosong},
+  year = {2020},
+  month = sep,
+  journal = {arXiv.org},
+  doi = {10.18653/v1/2021.acl-demo.43},
+  urldate = {2023-10-08},
+  abstract = {Textual adversarial attacking has received wide and increasing attention in recent years. Various attack models have been proposed, which are enormously distinct and implemented with different programming frameworks and settings. These facts hinder quick utilization and fair comparison of attack models. In this paper, we present an open-source textual adversarial attack toolkit named OpenAttack to solve these issues. Compared with existing other textual adversarial attack toolkits, OpenAttack has its unique strengths in support for all attack types, multilinguality, and parallel processing. Currently, OpenAttack includes 15 typical attack models that cover all attack types. Its highly inclusive modular design not only supports quick utilization of existing attack models, but also enables great flexibility and extensibility. OpenAttack has broad uses including comparing and evaluating attack models, measuring robustness of a model, assisting in developing new attack models, and adversarial training. Source code and documentation can be obtained at https://github.com/thunlp/OpenAttack.},
+  howpublished = {https://arxiv.org/abs/2009.09191v2},
+  langid = {english},
+  file = {/home/zohar/Zotero/storage/PJJLCM25/Zeng et al. - 2020 - OpenAttack An Open-source Textual Adversarial Att.pdf}
 }
