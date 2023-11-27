@@ -1,28 +1,12 @@
 {
-<<<<<<< HEAD
-  "build": {
-    "dockerfile": "Dockerfile"
-  },
-=======
   "name": "Academic Markdown",
   "image": "ghcr.io/cochaviz/academic_markdown:main",
   // "build": { "dockerfile": "Dockerfile" }, // for local building
->>>>>>> 36e34ce5d688ad0f6031d133421cac709756d06c
 
   "customizations": {
     "vscode": {
       "extensions": [
         "yzhang.markdown-all-in-one",
-<<<<<<< HEAD
-        "bierner.markdown-preview-github-styles",
-        "DavidAnson.vscode-markdownlint",
-        "notZaki.pandocciter",
-        "streetsidesoftware.code-spell-checker",
-        "tomoki1207.vscode-pdf"
-      ]
-    }
-  }
-=======
         "DavidAnson.vscode-markdownlint",
         "goessner.mdmath",
         "notZaki.pandocciter",
@@ -46,5 +30,4 @@
   "remoteUser": "markdown-warrior",
 
   "postCreateCommand": "pip3 install --no-cache-dir academic_markdown"
->>>>>>> 36e34ce5d688ad0f6031d133421cac709756d06c
 }
