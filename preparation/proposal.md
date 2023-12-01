@@ -152,14 +152,6 @@ related to _quantiying adaptability_.
    - Does this measure have any predictive value with regard to how many samples
      it will need to avoid a new attack?
 
-3. Can we show or argue this relation to be sufficient to describe the
-   (potential) safety of an LLM.
-
-   - Does the characteristic predict how well a model adapts to preventing new
-     attacks or adaptability[^2] in general?
-   - Is the characteristic in some way dependent on the performance of the model
-     in question? If so, does this mean we are only causing a reduction in
-     performance, and interpreting it as safety?
 
 The second would be to determine whether this actually constitutes a (valid?)
 measure of the safety of an LLM. While I'm very inclined to provide a large
@@ -181,9 +173,6 @@ expand on this as much at the current moment.
 [^1]: Of course when specifically optimizing for avoiding a single type of
     attack, but maybe random sampling tells something about the general
     resistance of a model against attacks.
-
-[^2]: Adaptability is used similarly as in footnote 1[^1], meaning the general
-    ability of a model to be trained to avoid certain attacks.
 
 [^dependent]: Sub-question 1 and 2 are dependent on one-another in some sense,
     so I consider, for example the question "Do different attacks give different
