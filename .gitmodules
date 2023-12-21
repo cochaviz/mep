@@ -1,0 +1,3 @@
+[submodule "src/intrinsic_fewshot_hardness"]
+	path = src/intrinsic_fewshot_hardness
+	url = git@github.com:colinzhaoust/intrinsic_fewshot_hardness.git

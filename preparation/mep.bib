@@ -25,6 +25,23 @@
   file = {/home/zohar/Zotero/storage/R4BG8QMX/Basu et al. - 2023 - HARD-META-DATASET++ TOWARDS UNDERSTAND- ING FEW-S.pdf}
 }
 
+@misc{bhardwajRedTeamingLargeLanguage2023,
+  title = {Red-{{Teaming Large Language Models}} Using {{Chain}} of {{Utterances}} for {{Safety-Alignment}}},
+  author = {Bhardwaj, Rishabh and Poria, Soujanya},
+  year = {2023},
+  month = aug,
+  number = {arXiv:2308.09662},
+  eprint = {2308.09662},
+  primaryclass = {cs},
+  publisher = {{arXiv}},
+  doi = {10.48550/arXiv.2308.09662},
+  urldate = {2023-12-08},
+  abstract = {Larger language models (LLMs) have taken the world by storm with their massive multi-tasking capabilities simply by optimizing over a next-word prediction objective. With the emergence of their properties and encoded knowledge, the risk of LLMs producing harmful outputs increases, making them unfit for scalable deployment for the public. In this work, we propose a new safety evaluation benchmark RED-EVAL that carries out red-teaming. We show that even widely deployed models are susceptible to the Chain of Utterances-based (CoU) prompting, jailbreaking closed source LLM-based systems such as GPT-4 and ChatGPT to unethically respond to more than 65\% and 73\% of harmful queries. We also demonstrate the consistency of the RED-EVAL across 8 open-source LLMs in generating harmful responses in more than 86\% of the red-teaming attempts. Next, we propose RED-INSTRUCT--An approach for the safety alignment of LLMs. It constitutes two phases: 1) HARMFULQA data collection: Leveraging CoU prompting, we collect a dataset that consists of 1.9K harmful questions covering a wide range of topics, 9.5K safe and 7.3K harmful conversations from ChatGPT; 2) SAFE-ALIGN: We demonstrate how the conversational dataset can be used for the safety alignment of LLMs by minimizing the negative log-likelihood over helpful responses and penalizing over harmful responses by gradient accent over sample loss. Our model STARLING, a fine-tuned Vicuna-7B, is observed to be more safely aligned when evaluated on RED-EVAL and HHH benchmarks while preserving the utility of the baseline models (TruthfulQA, MMLU, and BBH).},
+  archiveprefix = {arxiv},
+  keywords = {Computer Science - Computation and Language,red-teaming},
+  file = {/home/zohar/Zotero/storage/6FDFVMXV/Bhardwaj and Poria - 2023 - Red-Teaming Large Language Models using Chain of U.pdf;/home/zohar/Zotero/storage/S39M976T/2308.html}
+}
+
 @inproceedings{bonaertFastPreciseCertification2021,
   title = {Fast and Precise Certification of Transformers},
   booktitle = {Proceedings of the 42nd {{ACM SIGPLAN International Conference}} on {{Programming Language Design}} and {{Implementation}}},
@@ -48,6 +65,19 @@
   abstract = {We demonstrate that scaling up language models greatly improves task-agnostic, few-shot performance, sometimes even becoming competitive with prior state-ofthe-art fine-tuning approaches. Specifically, we train GPT-3, an autoregressive language model with 175 billion parameters, 10x more than any previous nonsparse language model, and test its performance in the few-shot setting. For all tasks, GPT-3 is applied without any gradient updates or fine-tuning, with tasks and few-shot demonstrations specified purely via text interaction with the model. GPT-3 achieves strong performance on many NLP datasets, including translation, question-answering, and cloze tasks. We also identify some datasets where GPT3's few-shot learning still struggles, as well as some datasets where GPT-3 faces methodological issues related to training on large web corpora.},
   langid = {english},
   file = {/home/zohar/Zotero/storage/AJZQ9E6Q/Brown et al. - Language Models are Few-Shot Learners.pdf}
+}
+
+@article{brownLanguageModelsAre2020,
+  title = {Language {{Models}} Are {{Few-Shot Learners}}},
+  author = {Brown, Tom and Mann, Benjamin and Ryder, Nick and Subbiah, Melanie and Kaplan, Jared D. and Dhariwal, Prafulla and Neelakantan, Arvind and Shyam, Pranav and Sastry, Girish and Askell, Amanda and Agarwal, Sandhini and {Herbert-Voss}, Ariel and Krueger, Gretchen and Henighan, Tom and Child, Rewon and Ramesh, Aditya and Ziegler, Daniel and Wu, Jeffrey and Winter, Clemens and Hesse, Chris and Chen, Mark and Sigler, Eric and Litwin, Mateusz and Gray, Scott and Chess, Benjamin and Clark, Jack and Berner, Christopher and McCandlish, Sam and Radford, Alec and Sutskever, Ilya and Amodei, Dario},
+  year = {2020},
+  journal = {Advances in Neural Information Processing Systems},
+  volume = {33},
+  pages = {1877--1901},
+  urldate = {2023-12-07},
+  langid = {english},
+  keywords = {adaptability},
+  file = {/home/zohar/Zotero/storage/LHW2GTXE/Brown et al. - 2020 - Language Models are Few-Shot Learners.pdf}
 }
 
 @article{carliniExtractingTrainingData2023,
@@ -166,6 +196,24 @@
   keywords = {Computer Science - Cryptography and Security,Computer Science - Machine Learning},
   note = {Comment: Extended version of our CAV'22 paper},
   file = {/home/zohar/Zotero/storage/3SJR7LSK/Fischer et al. - 2022 - Shared Certificates for Neural Network Verificatio.pdf}
+}
+
+@misc{ganguliRedTeamingLanguage2022,
+  title = {Red {{Teaming Language Models}} to {{Reduce Harms}}: {{Methods}}, {{Scaling Behaviors}}, and {{Lessons Learned}}},
+  shorttitle = {Red {{Teaming Language Models}} to {{Reduce Harms}}},
+  author = {Ganguli, Deep and Lovitt, Liane and Kernion, Jackson and Askell, Amanda and Bai, Yuntao and Kadavath, Saurav and Mann, Ben and Perez, Ethan and Schiefer, Nicholas and Ndousse, Kamal and Jones, Andy and Bowman, Sam and Chen, Anna and Conerly, Tom and DasSarma, Nova and Drain, Dawn and Elhage, Nelson and {El-Showk}, Sheer and Fort, Stanislav and {Hatfield-Dodds}, Zac and Henighan, Tom and Hernandez, Danny and Hume, Tristan and Jacobson, Josh and Johnston, Scott and Kravec, Shauna and Olsson, Catherine and Ringer, Sam and {Tran-Johnson}, Eli and Amodei, Dario and Brown, Tom and Joseph, Nicholas and McCandlish, Sam and Olah, Chris and Kaplan, Jared and Clark, Jack},
+  year = {2022},
+  month = nov,
+  number = {arXiv:2209.07858},
+  eprint = {2209.07858},
+  primaryclass = {cs},
+  publisher = {{arXiv}},
+  doi = {10.48550/arXiv.2209.07858},
+  urldate = {2023-12-08},
+  abstract = {We describe our early efforts to red team language models in order to simultaneously discover, measure, and attempt to reduce their potentially harmful outputs. We make three main contributions. First, we investigate scaling behaviors for red teaming across 3 model sizes (2.7B, 13B, and 52B parameters) and 4 model types: a plain language model (LM); an LM prompted to be helpful, honest, and harmless; an LM with rejection sampling; and a model trained to be helpful and harmless using reinforcement learning from human feedback (RLHF). We find that the RLHF models are increasingly difficult to red team as they scale, and we find a flat trend with scale for the other model types. Second, we release our dataset of 38,961 red team attacks for others to analyze and learn from. We provide our own analysis of the data and find a variety of harmful outputs, which range from offensive language to more subtly harmful non-violent unethical outputs. Third, we exhaustively describe our instructions, processes, statistical methodologies, and uncertainty about red teaming. We hope that this transparency accelerates our ability to work together as a community in order to develop shared norms, practices, and technical standards for how to red team language models.},
+  archiveprefix = {arxiv},
+  keywords = {Computer Science - Artificial Intelligence,Computer Science - Computation and Language,Computer Science - Computers and Society,red-teaming},
+  file = {/home/zohar/Zotero/storage/3S6CT6PG/Ganguli et al. - 2022 - Red Teaming Language Models to Reduce Harms Metho.pdf;/home/zohar/Zotero/storage/YPLCTZ9A/2209.html}
 }
 
 @inproceedings{gehrAI2SafetyRobustness2018,
@@ -287,6 +335,41 @@
   file = {/home/zohar/Zotero/storage/KTZGAUWA/Matsumoto et al. - 2023 - Membership Inference Attacks against Diffusion Mod.pdf;/home/zohar/Zotero/storage/3INDNV4R/2302.html}
 }
 
+@misc{mehrabiFLIRTFeedbackLoop2023,
+  title = {{{FLIRT}}: {{Feedback Loop In-context Red Teaming}}},
+  shorttitle = {{{FLIRT}}},
+  author = {Mehrabi, Ninareh and Goyal, Palash and Dupuy, Christophe and Hu, Qian and Ghosh, Shalini and Zemel, Richard and Chang, Kai-Wei and Galstyan, Aram and Gupta, Rahul},
+  year = {2023},
+  month = aug,
+  number = {arXiv:2308.04265},
+  eprint = {2308.04265},
+  primaryclass = {cs},
+  publisher = {{arXiv}},
+  urldate = {2023-12-08},
+  abstract = {Warning: this paper contains content that may be inappropriate or offensive. As generative models become available for public use in various applications, testing and analyzing vulnerabilities of these models has become a priority. Here we propose an automatic red teaming framework that evaluates a given model and exposes its vulnerabilities against unsafe and inappropriate content generation. Our framework uses in-context learning in a feedback loop to red team models and trigger them into unsafe content generation. We propose different in-context attack strategies to automatically learn effective and diverse adversarial prompts for text-to-image models. Our experiments demonstrate that compared to baseline approaches, our proposed strategy is significantly more effective in exposing vulnerabilities in Stable Diffusion (SD) model, even when the latter is enhanced with safety features. Furthermore, we demonstrate that the proposed framework is effective for red teaming text-to-text models, resulting in significantly higher toxic response generation rate compared to previously reported numbers.},
+  archiveprefix = {arxiv},
+  langid = {english},
+  keywords = {Computer Science - Artificial Intelligence,red-teaming},
+  file = {/home/zohar/Zotero/storage/TLJ9R97X/Mehrabi et al. - 2023 - FLIRT Feedback Loop In-context Red Teaming.pdf}
+}
+
+@misc{perezRedTeamingLanguage2022,
+  title = {Red {{Teaming Language Models}} with {{Language Models}}},
+  author = {Perez, Ethan and Huang, Saffron and Song, Francis and Cai, Trevor and Ring, Roman and Aslanides, John and Glaese, Amelia and McAleese, Nat and Irving, Geoffrey},
+  year = {2022},
+  month = feb,
+  number = {arXiv:2202.03286},
+  eprint = {2202.03286},
+  primaryclass = {cs},
+  publisher = {{arXiv}},
+  doi = {10.48550/arXiv.2202.03286},
+  urldate = {2023-12-08},
+  abstract = {Language Models (LMs) often cannot be deployed because of their potential to harm users in hard-to-predict ways. Prior work identifies harmful behaviors before deployment by using human annotators to hand-write test cases. However, human annotation is expensive, limiting the number and diversity of test cases. In this work, we automatically find cases where a target LM behaves in a harmful way, by generating test cases ("red teaming") using another LM. We evaluate the target LM's replies to generated test questions using a classifier trained to detect offensive content, uncovering tens of thousands of offensive replies in a 280B parameter LM chatbot. We explore several methods, from zero-shot generation to reinforcement learning, for generating test cases with varying levels of diversity and difficulty. Furthermore, we use prompt engineering to control LM-generated test cases to uncover a variety of other harms, automatically finding groups of people that the chatbot discusses in offensive ways, personal and hospital phone numbers generated as the chatbot's own contact info, leakage of private training data in generated text, and harms that occur over the course of a conversation. Overall, LM-based red teaming is one promising tool (among many needed) for finding and fixing diverse, undesirable LM behaviors before impacting users.},
+  archiveprefix = {arxiv},
+  keywords = {Computer Science - Artificial Intelligence,Computer Science - Computation and Language,Computer Science - Cryptography and Security,Computer Science - Machine Learning,red-teaming},
+  file = {/home/zohar/Zotero/storage/N9IRA52U/Perez et al. - 2022 - Red Teaming Language Models with Language Models.pdf;/home/zohar/Zotero/storage/8A8Y3B6S/2202.html}
+}
+
 @misc{robeySmoothLLMDefendingLarge2023,
   title = {{{SmoothLLM}}: {{Defending Large Language Models Against Jailbreaking Attacks}}},
   shorttitle = {{{SmoothLLM}}},
@@ -396,6 +479,24 @@
   file = {/home/zohar/Zotero/storage/KRLCEWG9/2309.10253.pdf}
 }
 
+@misc{yuGPTFUZZERRedTeaming2023a,
+  title = {{{GPTFUZZER}}: {{Red Teaming Large Language Models}} with {{Auto-Generated Jailbreak Prompts}}},
+  shorttitle = {{{GPTFUZZER}}},
+  author = {Yu, Jiahao and Lin, Xingwei and Yu, Zheng and Xing, Xinyu},
+  year = {2023},
+  month = oct,
+  number = {arXiv:2309.10253},
+  eprint = {2309.10253},
+  primaryclass = {cs},
+  publisher = {{arXiv}},
+  doi = {10.48550/arXiv.2309.10253},
+  urldate = {2023-12-08},
+  abstract = {Large language models (LLMs) have recently experienced tremendous popularity and are widely used from casual conversations to AI-driven programming. However, despite their considerable success, LLMs are not entirely reliable and can give detailed guidance on how to conduct harmful or illegal activities. While safety measures can reduce the risk of such outputs, adversarial jailbreak attacks can still exploit LLMs to produce harmful content. These jailbreak templates are typically manually crafted, making large-scale testing challenging. In this paper, we introduce GPTFuzz, a novel black-box jailbreak fuzzing framework inspired by the AFL fuzzing framework. Instead of manual engineering, GPTFuzz automates the generation of jailbreak templates for red-teaming LLMs. At its core, GPTFuzz starts with human-written templates as initial seeds, then mutates them to produce new templates. We detail three key components of GPTFuzz: a seed selection strategy for balancing efficiency and variability, mutate operators for creating semantically equivalent or similar sentences, and a judgment model to assess the success of a jailbreak attack. We evaluate GPTFuzz against various commercial and open-source LLMs, including ChatGPT, LLaMa-2, and Vicuna, under diverse attack scenarios. Our results indicate that GPTFuzz consistently produces jailbreak templates with a high success rate, surpassing human-crafted templates. Remarkably, GPTFuzz achieves over 90\% attack success rates against ChatGPT and Llama-2 models, even with suboptimal initial seed templates. We anticipate that GPTFuzz will be instrumental for researchers and practitioners in examining LLM robustness and will encourage further exploration into enhancing LLM safety.},
+  archiveprefix = {arxiv},
+  keywords = {Computer Science - Artificial Intelligence,red-teaming},
+  file = {/home/zohar/Zotero/storage/H8HGN9TZ/Yu et al. - 2023 - GPTFUZZER Red Teaming Large Language Models with .pdf;/home/zohar/Zotero/storage/GVVQYSNC/2309.html}
+}
+
 @misc{zengOpenAttackOpensourceTextual2020,
   title = {{{OpenAttack}}: {{An Open-source Textual Adversarial Attack Toolkit}}},
   shorttitle = {{{OpenAttack}}},
@@ -409,4 +510,41 @@
   howpublished = {https://arxiv.org/abs/2009.09191v2},
   langid = {english},
   file = {/home/zohar/Zotero/storage/PJJLCM25/Zeng et al. - 2020 - OpenAttack An Open-source Textual Adversarial Att.pdf}
+}
+
+@misc{zhangInstructionTuningLarge2023,
+  title = {Instruction {{Tuning}} for {{Large Language Models}}: {{A Survey}}},
+  shorttitle = {Instruction {{Tuning}} for {{Large Language Models}}},
+  author = {Zhang, Shengyu and Dong, Linfeng and Li, Xiaoya and Zhang, Sen and Sun, Xiaofei and Wang, Shuhe and Li, Jiwei and Hu, Runyi and Zhang, Tianwei and Wu, Fei and Wang, Guoyin},
+  year = {2023},
+  month = oct,
+  number = {arXiv:2308.10792},
+  eprint = {2308.10792},
+  primaryclass = {cs},
+  publisher = {{arXiv}},
+  urldate = {2023-12-19},
+  abstract = {This paper surveys research works in the quickly advancing field of instruction tuning (IT), a crucial technique to enhance the capabilities and controllability of large language models (LLMs). Instruction tuning refers to the process of further training LLMs on a dataset consisting of (INSTRUCTION, OUTPUT) pairs in a supervised fashion, which bridges the gap between the next-word prediction objective of LLMs and the users' objective of having LLMs adhere to human instructions. In this work, we make a systematic review of the literature, including the general methodology of IT, the construction of IT datasets, the training of IT models, and applications to different modalities, domains and application, along with analysis on aspects that influence the outcome of IT (e.g., generation of instruction outputs, size of the instruction dataset, etc). We also review the potential pitfalls of IT along with criticism against it, along with efforts pointing out current deficiencies of existing strategies and suggest some avenues for fruitful research.},
+  archiveprefix = {arxiv},
+  langid = {english},
+  keywords = {Computer Science - Artificial Intelligence,Computer Science - Computation and Language,Computer Science - Machine Learning},
+  note = {Comment: A Survey paper, Pre-print},
+  file = {/home/zohar/Zotero/storage/7LSLPC2Y/Zhang et al. - 2023 - Instruction Tuning for Large Language Models A Su.pdf}
+}
+
+@misc{zhaoMeasuringIntrinsicFewShot2022a,
+  title = {On {{Measuring}} the {{Intrinsic Few-Shot Hardness}} of {{Datasets}}},
+  author = {Zhao, Xinran and Murty, Shikhar and Manning, Christopher D.},
+  year = {2022},
+  month = nov,
+  number = {arXiv:2211.09113},
+  eprint = {2211.09113},
+  primaryclass = {cs},
+  publisher = {{arXiv}},
+  doi = {10.48550/arXiv.2211.09113},
+  urldate = {2023-12-15},
+  abstract = {While advances in pre-training have led to dramatic improvements in few-shot learning of NLP tasks, there is limited understanding of what drives successful few-shot adaptation in datasets. In particular, given a new dataset and a pre-trained model, what properties of the dataset make it {\textbackslash}emph\{few-shot learnable\} and are these properties independent of the specific adaptation techniques used? We consider an extensive set of recent few-shot learning methods, and show that their performance across a large number of datasets is highly correlated, showing that few-shot hardness may be intrinsic to datasets, for a given pre-trained model. To estimate intrinsic few-shot hardness, we then propose a simple and lightweight metric called "Spread" that captures the intuition that few-shot learning is made possible by exploiting feature-space invariances between training and test samples. Our metric better accounts for few-shot hardness compared to existing notions of hardness, and is {\textasciitilde}8-100x faster to compute.},
+  archiveprefix = {arxiv},
+  keywords = {Computer Science - Computation and Language},
+  note = {Comment: EMNLP 2022 camera ready version},
+  file = {/home/zohar/Zotero/storage/MAYPEGA9/Zhao et al. - 2022 - On Measuring the Intrinsic Few-Shot Hardness of Da.pdf;/home/zohar/Zotero/storage/E4MCJIYU/2211.html}
 }

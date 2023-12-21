@@ -17,7 +17,7 @@ _Conclusion:_
 
 ## 5 Dec 2023
 
-_Conclusion_:
+_Conclusion:_
 
 - A couple of things are still too vague to answer concretely:
   - Can we have a more concrete qualitative definition of adaptability?
@@ -32,3 +32,9 @@ _Conclusion_:
   2. Try and get some preliminary results with red-teaming tools. See how they
      work and why they constitute successful attacks, and whether those
      definitions are appropriate within our context.
+
+## 21 Dec 2023
+
+_Conclusion_:
+
+- Get your ass to work

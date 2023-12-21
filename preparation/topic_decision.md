@@ -1,5 +1,5 @@
 ---
-bibliography: bibliography.bib
+bibliography: ../bibliography.bib
 ---
 
 # Topic Decision

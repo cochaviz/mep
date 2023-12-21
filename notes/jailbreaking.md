@@ -72,7 +72,7 @@ Combining the ideas of @weiJailbrokenHowDoes2023 also works incredibly well:
 > GPT-4 as GPT-3, even if specific prompts require modification. To fully resolve
 > the issue of competing objectives, one may have to move beyond the
 > pretrain-then-finetune paradigm and, e.g., incorporate human values starting
-> from pretraining [31].  Mismatched generalization is also not resolved by
+> from pretraining [31]. Mismatched generalization is also not resolved by
 > scaling alone, as more data and larger models will not guarantee that safety
 > training generalizes as broadly as model capabilities. In fact, we find that
 > scale can exacerbate instruction-following finetuning generalizing better than
@@ -94,3 +94,41 @@ a human-like fashion through conversation. Even talking in a strict security
 context, determining whether a certain question is malicious or may produce
 harmful information depends on the intention of the user. Academic discourse is
 a prime example.
+
+## Red-Teaming tools
+
+- The paper by @yuGPTFUZZERRedTeaming2023 uses a sort of genetic algorithm to
+  generate for adversarial examples from a hand-crafted attack, a seed. Their
+  approach to attack success is to use a fine-tuning BERT model. The source code
+  publicly available on <https://github.com/sherdencooper/GPTFuzz>.
+
+- Another paper uses a human-instructed version of red-teaming where individuals
+  are asked to identify more harmful responses to manual jailbreaking
+  attempts [@ganguliRedTeamingLanguage2022]. This paper really blurs the line
+  between security and safety which makes me apprehensive of this approach
+  regardless of the fact that this would be infeasible for my research.
+
+### Conclusion
+
+It seems that various papers use similar methods where they use an LLM to
+determine whether some response might have a negative sentiment. While I don't
+feel necessarily feel comfortable with this approach, it does seem the most
+prevalent. There are also rule-based methods, but these don't appear to be as
+effective. For sake of brevity and ease of communication, I'll call a system
+that judges an output to be (non)malicious a **judge**.
+
+Regardless of my feelings toward either methodology, the last thing I want is to
+introduce more methods for determining how 'not in-line with policy' some
+specific output is. The purpose of my paper is to introduce a metric for
+performing security analysis on LLMs that should stand independent of whatever
+specific policy. I will therefore only use pre-existing measures.
+
+As there are many judges available, but which ones should be used? I'm not sure,
+but I do think the following criteria will be important (in order of importance):
+
+- The judge should be somewhat widespread in use, often cited, or otherwise
+  prominent. (An example would be the recent release of Meta's publicly
+  available judge.)
+- The approach should be unique with respect to the others. (The more varied the
+  judgements, the better we will be able to determine whether my metric is
+  adequate for varied policies.)
