@@ -2,7 +2,6 @@
   "name": "Academic Markdown",
   "image": "ghcr.io/cochaviz/academic_markdown:main",
   // "build": { "dockerfile": "Dockerfile" }, // for local building
-
   "customizations": {
     "vscode": {
       "extensions": [
@@ -21,13 +20,11 @@
       ]
     }
   },
-
   "remoteEnv": {
     "useTectonic": "--tectonic",
     // academic_markdown installed in the user directory
     "PATH": "${containerEnv:PATH}:/home/markdown-warrior/.local/bin/"
   },
   "remoteUser": "markdown-warrior",
-
   "postCreateCommand": "pip3 install --no-cache-dir academic_markdown"
 }

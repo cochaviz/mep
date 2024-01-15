@@ -1,4 +1,4 @@
-# Preface
+# On Safety and Security
 
 Perhaps I should preface with a discussion on the distinction between safety and
 security. Currently, nearly all papers discuss jailbreaking in the context of

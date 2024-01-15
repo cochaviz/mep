@@ -1,7 +1,3 @@
----
-bibliograpy: ../mep.bib
----
-
 # On Adaptability and Jailbreaking
 
 An approach to determining the security of a LLM could be to not only determine

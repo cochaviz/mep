@@ -1,7 +1,13 @@
 {
   "PandocCiter.UseDefaultBib": true,
-  "PandocCiter.DefaultBibs": ["preparation/bibliography.bib"],
-
+  "PandocCiter.DefaultBibs": [
+    "mep.bib"
+  ],
   "editor.defaultFormatter": "esbenp.prettier-vscode",
-  "pandocMarkdownPreview.extraPandocArguments": "--citeproc -F pandoc-crossref $([ -f ./metadata.yaml ] && echo \"--metadata=metadata.yaml\") -f markdown+mark"
+  "pandocMarkdownPreview.extraPandocArguments": "--citeproc -F pandoc-crossref $([ -f ./metadata.yaml ] && echo \"--metadata=metadata.yaml\") -f markdown+mark",
+  "[jsonc]": {
+    "editor.defaultFormatter": "vscode.json-language-features"
+  },
+  "python.analysis.typeCheckingMode": "basic",
+  "python.analysis.autoImportCompletions": true
 }

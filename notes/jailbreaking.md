@@ -132,3 +132,23 @@ but I do think the following criteria will be important (in order of importance)
 - The approach should be unique with respect to the others. (The more varied the
   judgements, the better we will be able to determine whether my metric is
   adequate for varied policies.)
+
+## Security Definitions
+
+- I think one thing to keep in mind is that **there is more to NLP than
+  generation**. Although it is very easy to start thinking purely in the context
+  of ChatGPT, models like BERT also perform classification tasks all the while
+  being able to perform generation too. This makes testing their current adversarial
+  resistance, or CAR (which I use as a fancy term for ratio of successful
+  jailbreaking attacks, i.e. lower is better[^lower_is_better]), hard to justify
+  as a good measure for the current security of the model as this only evaluates
+  the generative aspect of it. **Perhaps we would be better off generalizing
+  these measures to include other NLP tasks, or be otherwise wary of incomplete
+  security definitions**.
+  
+[^lower_is_better]: Given the framing effect, it might be more favorable to
+    express a security measure in terms of 'lower is better'. That way, a system
+    that would be 10% insecure (whatever that may mean) would be more strongly
+    scrutinized than a system that is 90% secure. Showing the same information
+    in a different way can have the effect of making systems more secure
+    overall.

@@ -4,3 +4,4 @@
 **/*.spl
 **/*.synctex.gz
 *.pdf
+src/.env

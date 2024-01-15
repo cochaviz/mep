@@ -14,6 +14,5 @@ structure which is essentially an encoder for the generated output sequence, and
 (ii) a structure which takes the encodings of the input and output and predicts
 the most likely word by some linear classifier.
 
-## Encoder
-
-## Decoder
+Generally, however, only de _decoder_ part is used in chatbot settings. In case
+of BERT only the _encoder_ part is used.

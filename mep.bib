@@ -59,14 +59,6 @@
   file = {/home/zohar/Zotero/storage/D2UV9MSK/Bonaert et al. - 2021 - Fast and precise certification of transformers.pdf}
 }
 
-@article{brownLanguageModelsAre,
-  title = {Language {{Models}} Are {{Few-Shot Learners}}},
-  author = {Brown, Tom B and Mann, Benjamin and Ryder, Nick and Subbiah, Melanie and Kaplan, Jared and Dhariwal, Prafulla and Neelakantan, Arvind and Shyam, Pranav and Sastry, Girish and Askell, Amanda and Agarwal, Sandhini and {Herbert-Voss}, Ariel and Krueger, Gretchen and Henighan, Tom},
-  abstract = {We demonstrate that scaling up language models greatly improves task-agnostic, few-shot performance, sometimes even becoming competitive with prior state-ofthe-art fine-tuning approaches. Specifically, we train GPT-3, an autoregressive language model with 175 billion parameters, 10x more than any previous nonsparse language model, and test its performance in the few-shot setting. For all tasks, GPT-3 is applied without any gradient updates or fine-tuning, with tasks and few-shot demonstrations specified purely via text interaction with the model. GPT-3 achieves strong performance on many NLP datasets, including translation, question-answering, and cloze tasks. We also identify some datasets where GPT3's few-shot learning still struggles, as well as some datasets where GPT-3 faces methodological issues related to training on large web corpora.},
-  langid = {english},
-  file = {/home/zohar/Zotero/storage/AJZQ9E6Q/Brown et al. - Language Models are Few-Shot Learners.pdf}
-}
-
 @article{brownLanguageModelsAre2020,
   title = {Language {{Models}} Are {{Few-Shot Learners}}},
   author = {Brown, Tom and Mann, Benjamin and Ryder, Nick and Subbiah, Melanie and Kaplan, Jared D. and Dhariwal, Prafulla and Neelakantan, Arvind and Shyam, Pranav and Sastry, Girish and Askell, Amanda and Agarwal, Sandhini and {Herbert-Voss}, Ariel and Krueger, Gretchen and Henighan, Tom and Child, Rewon and Ramesh, Aditya and Ziegler, Daniel and Wu, Jeffrey and Winter, Clemens and Hesse, Chris and Chen, Mark and Sigler, Eric and Litwin, Mateusz and Gray, Scott and Chess, Benjamin and Clark, Jack and Berner, Christopher and McCandlish, Sam and Radford, Alec and Sutskever, Ilya and Amodei, Dario},
@@ -126,6 +118,24 @@
   abstract = {We introduce the concept of provably robust adversarial examples for deep neural networks {\textendash} connected input regions constructed from standard adversarial examples which are guaranteed to be robust to a set of real-world perturbations (such as changes in pixel intensity and geometric transformations). We present a novel method called PARADE for generating these regions in a scalable manner which works by iteratively refining the region initially obtained via sampling until a refined region is certified to be adversarial with existing state-of-the-art verifiers. At each step, a novel optimization procedure is applied to maximize the region's volume under the constraint that the convex relaxation of the network behavior with respect to the region implies a chosen bound on the certification objective. Our experimental evaluation shows the effectiveness of PARADE: it successfully finds large provably robust regions including ones containing {$\approx$} 10573 adversarial examples for pixel intensity and {$\approx$} 10599 for geometric perturbations. The provability enables our robust examples to be significantly more effective against state-of-theart defenses based on randomized smoothing than the individual attacks used to construct the regions.},
   langid = {english},
   file = {/home/zohar/Zotero/storage/K9MSD8IR/Dimitrov et al. - 2022 - PROVABLY ROBUST ADVERSARIAL EXAMPLES.pdf}
+}
+
+@misc{dingOpenPromptOpensourceFramework2021,
+  title = {{{OpenPrompt}}: {{An Open-source Framework}} for {{Prompt-learning}}},
+  shorttitle = {{{OpenPrompt}}},
+  author = {Ding, Ning and Hu, Shengding and Zhao, Weilin and Chen, Yulin and Liu, Zhiyuan and Zheng, Hai-Tao and Sun, Maosong},
+  year = {2021},
+  month = nov,
+  number = {arXiv:2111.01998},
+  eprint = {2111.01998},
+  primaryclass = {cs},
+  publisher = {{arXiv}},
+  urldate = {2024-01-05},
+  abstract = {Prompt-learning has become a new paradigm in modern natural language processing, which directly adapts pre-trained language models (PLMs) to cloze-style prediction, autoregressive modeling, or sequence to sequence generation, resulting in promising performances on various tasks. However, no standard implementation framework of prompt-learning is proposed yet, and most existing promptlearning codebases, often unregulated, only provide limited implementations for specific scenarios. Since there are many details such as templating strategy, initializing strategy, and verbalizing strategy, etc. need to be considered in prompt-learning, practitioners face impediments to quickly adapting the desired prompt learning methods to their applications. In this paper, we present OpenPrompt, a unified easyto-use toolkit to conduct prompt-learning over PLMs. OpenPrompt is a research-friendly framework that is equipped with efficiency, modularity, and extendibility, and its combinability allows the freedom to combine different PLMs, task formats, and prompting modules in a unified paradigm. Users could expediently deploy prompt-learning frameworks and evaluate the generalization of them on different NLP tasks without constraints. OpenPrompt is publicly released at https://github.com/ thunlp/OpenPrompt.},
+  archiveprefix = {arxiv},
+  langid = {english},
+  keywords = {Computer Science - Artificial Intelligence,Computer Science - Computation and Language,Computer Science - Machine Learning},
+  file = {/home/zohar/Zotero/storage/TP5B2TJZ/Ding et al. - 2021 - OpenPrompt An Open-source Framework for Prompt-le.pdf}
 }
 
 @misc{duanAreDiffusionModels2023,
@@ -214,6 +224,22 @@
   archiveprefix = {arxiv},
   keywords = {Computer Science - Artificial Intelligence,Computer Science - Computation and Language,Computer Science - Computers and Society,red-teaming},
   file = {/home/zohar/Zotero/storage/3S6CT6PG/Ganguli et al. - 2022 - Red Teaming Language Models to Reduce Harms Metho.pdf;/home/zohar/Zotero/storage/YPLCTZ9A/2209.html}
+}
+
+@inproceedings{gaoMakingPretrainedLanguage2021,
+  title = {Making {{Pre-trained Language Models Better Few-shot Learners}}},
+  booktitle = {Proceedings of the 59th {{Annual Meeting}} of the {{Association}} for {{Computational Linguistics}} and the 11th {{International Joint Conference}} on {{Natural Language Processing}} ({{Volume}} 1: {{Long Papers}})},
+  author = {Gao, Tianyu and Fisch, Adam and Chen, Danqi},
+  year = {2021},
+  pages = {3816--3830},
+  publisher = {{Association for Computational Linguistics}},
+  address = {{Online}},
+  doi = {10.18653/v1/2021.acl-long.295},
+  urldate = {2023-12-21},
+  abstract = {The recent GPT-3 model (Brown et al., 2020) achieves remarkable few-shot performance solely by leveraging a natural-language prompt and a few task demonstrations as input context. Inspired by their findings, we study few-shot learning in a more practical scenario, where we use smaller language models for which fine-tuning is computationally efficient. We present LM-BFF{\textemdash}better few-shot fine-tuning of language models{\textemdash}a suite of simple and complementary techniques for fine-tuning language models on a small number of annotated examples. Our approach includes (1) prompt-based fine-tuning together with a novel pipeline for automating prompt generation; and (2) a refined strategy for dynamically and selectively incorporating demonstrations into each context. Finally, we present a systematic evaluation for analyzing few-shot performance on a range of NLP tasks, including classification and regression. Our experiments demonstrate that our methods combine to dramatically outperform standard fine-tuning procedures in this low resource setting, achieving up to 30\% absolute improvement, and 11\% on average across all tasks. Our approach makes minimal assumptions on task resources and domain expertise, and hence constitutes a strong task-agnostic method for few-shot learning.},
+  langid = {english},
+  note = {[TLDR] The LM-BFF approach makes minimal assumptions on task resources and domain expertise, and hence constitutes a strong task-agnostic method for few-shot learning.},
+  file = {/home/zohar/Zotero/storage/H4RH9LBY/Gao et al. - 2021 - Making Pre-trained Language Models Better Few-shot.pdf}
 }
 
 @inproceedings{gehrAI2SafetyRobustness2018,
@@ -407,6 +433,31 @@
   file = {/home/zohar/Zotero/storage/5RGUAXPP/Wang et al. - 2021 - Generalizing from a Few Examples A Survey on Few-.pdf}
 }
 
+@inproceedings{wangGLUEMultiTaskBenchmark2018,
+  title = {{{GLUE}}: {{A Multi-Task Benchmark}} and {{Analysis Platform}} for {{Natural Language Understanding}}},
+  shorttitle = {{{GLUE}}},
+  booktitle = {Proceedings of the 2018 {{EMNLP Workshop BlackboxNLP}}: {{Analyzing}} and {{Interpreting Neural Networks}} for {{NLP}}},
+  author = {Wang, Alex and Singh, Amanpreet and Michael, Julian and Hill, Felix and Levy, Omer and Bowman, Samuel},
+  editor = {Linzen, Tal and Chrupa{\textbackslash}la, Grzegorz and Alishahi, Afra},
+  year = {2018},
+  month = nov,
+  pages = {353--355},
+  publisher = {{Association for Computational Linguistics}},
+  address = {{Brussels, Belgium}},
+  doi = {10.18653/v1/W18-5446},
+  urldate = {2024-01-05},
+  abstract = {Human ability to understand language is general, flexible, and robust. In contrast, most NLU models above the word level are designed for a specific task and struggle with out-of-domain data. If we aspire to develop models with understanding beyond the detection of superficial correspondences between inputs and outputs, then it is critical to develop a unified model that can execute a range of linguistic tasks across different domains. To facilitate research in this direction, we present the General Language Understanding Evaluation (GLUE, gluebenchmark.com): a benchmark of nine diverse NLU tasks, an auxiliary dataset for probing models for understanding of specific linguistic phenomena, and an online platform for evaluating and comparing models. For some benchmark tasks, training data is plentiful, but for others it is limited or does not match the genre of the test set. GLUE thus favors models that can represent linguistic knowledge in a way that facilitates sample-efficient learning and effective knowledge-transfer across tasks. While none of the datasets in GLUE were created from scratch for the benchmark, four of them feature privately-held test data, which is used to ensure that the benchmark is used fairly. We evaluate baselines that use ELMo (Peters et al., 2018), a powerful transfer learning technique, as well as state-of-the-art sentence representation models. The best models still achieve fairly low absolute scores. Analysis with our diagnostic dataset yields similarly weak performance over all phenomena tested, with some exceptions.},
+  file = {/home/zohar/Zotero/storage/299H5YHK/Wang et al. - 2018 - GLUE A Multi-Task Benchmark and Analysis Platform.pdf}
+}
+
+@article{wangSuperGLUEStickierBenchmark,
+  title = {{{SuperGLUE}}: {{A Stickier Benchmark}} for {{General-Purpose Language Understanding Systems}}},
+  author = {Wang, Alex and Pruksachatkun, Yada and Nangia, Nikita and Singh, Amanpreet and Michael, Julian and Hill, Felix and Levy, Omer and Bowman, Samuel R},
+  abstract = {In the last year, new models and methods for pretraining and transfer learning have driven striking performance improvements across a range of language understanding tasks. The GLUE benchmark, introduced a little over one year ago, offers a single-number metric that summarizes progress on a diverse set of such tasks, but performance on the benchmark has recently surpassed the level of non-expert humans, suggesting limited headroom for further research. In this paper we present SuperGLUE, a new benchmark styled after GLUE with a new set of more difficult language understanding tasks, a software toolkit, and a public leaderboard. SuperGLUE is available at super.gluebenchmark.com.},
+  langid = {english},
+  file = {/home/zohar/Zotero/storage/KCF7U5GJ/Wang et al. - SuperGLUE A Stickier Benchmark for General-Purpos.pdf}
+}
+
 @misc{weiJailbrokenHowDoes2023,
   title = {Jailbroken: {{How Does LLM Safety Training Fail}}?},
   shorttitle = {Jailbroken},
@@ -461,7 +512,7 @@
   file = {/home/zohar/Zotero/storage/SLJKVVBJ/Yang et al. - 2023 - The Dawn of LMMs Preliminary Explorations with GP.pdf;/home/zohar/Zotero/storage/IJ5L5JKS/2309.html}
 }
 
-@misc{yuGPTFUZZERRedTeaming2023,
+@misc{yuGPTFUZZERRedTeaming2023b,
   title = {{{GPTFUZZER}}: {{Red Teaming Large Language Models}} with {{Auto-Generated Jailbreak Prompts}}},
   shorttitle = {{{GPTFUZZER}}},
   author = {Yu, Jiahao and Lin, Xingwei and Yu, Zheng and Xing, Xinyu},
@@ -471,12 +522,12 @@
   eprint = {2309.10253},
   primaryclass = {cs},
   publisher = {{arXiv}},
-  urldate = {2023-10-22},
+  urldate = {2024-01-11},
   abstract = {Content warning: This paper contains unfiltered content generated by LLMs that may be offensive to readers. Large language models (LLMs) have recently experienced tremendous popularity and are widely used from casual conversations to AI-driven programming. However, despite their considerable success, LLMs are not entirely reliable and can give detailed guidance on how to conduct harmful or illegal activities. While safety measures can reduce the risk of such outputs, adversarial ``jailbreak'' attacks can still exploit LLMs to produce harmful content. These jailbreak templates are typically manually crafted, making large-scale testing challenging. In this paper, we introduce GPTFUZZER, a novel blackbox jailbreak fuzzing framework inspired by the AFL fuzzing framework. Instead of manual engineering, GPTFUZZER automates the generation of jailbreak templates for red-teaming LLMs. At its core, GPTFUZZER starts with human-written templates as initial seeds, then mutates them to produce new templates. We detail three key components of GPTFUZZER: a seed selection strategy for balancing efficiency and variability, mutate operators for creating semantically equivalent or similar sentences, and a judgment model to assess the success of a jailbreak attack.},
   archiveprefix = {arxiv},
   langid = {english},
   keywords = {Computer Science - Artificial Intelligence},
-  file = {/home/zohar/Zotero/storage/KRLCEWG9/2309.10253.pdf}
+  file = {/home/zohar/Zotero/storage/FMHPYAA7/Yu et al. - 2023 - GPTFUZZER Red Teaming Large Language Models with .pdf}
 }
 
 @misc{zengOpenAttackOpensourceTextual2020,
@@ -511,6 +562,22 @@
   keywords = {Computer Science - Artificial Intelligence,Computer Science - Computation and Language,Computer Science - Machine Learning},
   note = {Comment: A Survey paper, Pre-print},
   file = {/home/zohar/Zotero/storage/7LSLPC2Y/Zhang et al. - 2023 - Instruction Tuning for Large Language Models A Su.pdf}
+}
+
+@inproceedings{zhaoCalibrateUseImproving2021,
+  title = {Calibrate {{Before Use}}: {{Improving Few-shot Performance}} of {{Language Models}}},
+  shorttitle = {Calibrate {{Before Use}}},
+  booktitle = {Proceedings of the 38th {{International Conference}} on {{Machine Learning}}},
+  author = {Zhao, Zihao and Wallace, Eric and Feng, Shi and Klein, Dan and Singh, Sameer},
+  year = {2021},
+  month = jul,
+  pages = {12697--12706},
+  publisher = {{PMLR}},
+  issn = {2640-3498},
+  urldate = {2023-12-23},
+  abstract = {GPT-3 can perform numerous tasks when provided a natural language prompt that contains a few training examples. We show that this type of few-shot learning can be unstable: the choice of prompt format, training examples, and even the order of the examples can cause accuracy to vary from near chance to near state-of-the-art. We demonstrate that this instability arises from the bias of language models towards predicting certain answers, e.g., those that are placed near the end of the prompt or are common in the pre-training data. To mitigate this, we first estimate the model's bias towards each answer by asking for its prediction when given a training prompt and a content-free test input such as "N/A". We then fit calibration parameters that cause the prediction for this input to be uniform across answers. On a diverse set of tasks, this contextual calibration procedure substantially improves GPT-3 and GPT-2's accuracy (up to 30.0\% absolute) across different choices of the prompt, while also making learning considerably more stable.},
+  langid = {english},
+  file = {/home/zohar/Zotero/storage/AKK5HK3L/Zhao et al. - 2021 - Calibrate Before Use Improving Few-shot Performan.pdf;/home/zohar/Zotero/storage/MKXNY5IV/Zhao et al. - 2021 - Calibrate Before Use Improving Few-shot Performan.pdf}
 }
 
 @misc{zhaoMeasuringIntrinsicFewShot2022a,
