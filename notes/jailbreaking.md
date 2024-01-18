@@ -133,6 +133,10 @@ but I do think the following criteria will be important (in order of importance)
   judgements, the better we will be able to determine whether my metric is
   adequate for varied policies.)
 
+## Datasets of Adversarial Examples
+
+
+
 ## Security Definitions
 
 - I think one thing to keep in mind is that **there is more to NLP than
