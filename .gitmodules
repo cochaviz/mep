@@ -4,3 +4,6 @@
 [submodule "src/gptfuzz"]
 	path = src/gptfuzz
 	url = git@github.com:sherdencooper/GPTFuzz.git
+[submodule "src/scalene"]
+	path = src/scalene
+	url = git@github.com:cochaviz/scalene.git
