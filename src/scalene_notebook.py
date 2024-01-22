@@ -7,9 +7,6 @@ import nbformat
 import scalene
 import typer
 
-APP_NAME="scalene_notebook"
-app = typer.Typer()
-
 def notebook_to_python(input_notebook, output_script=None, cells=None):
     with open(input_notebook, 'r', encoding='utf-8') as nb_file:
         nb_contents = nb_file.read()
@@ -30,18 +27,23 @@ def notebook_to_python(input_notebook, output_script=None, cells=None):
 
     return output_script
 
-@command
-def profile(notebook, cells=None, scalene_args=[], cleanup=True):
+def profile(notebook, cells=None, scalene_args=None, cleanup=True):
     if cells:
         start, end = map(int, cells.split("-"))
         cells = (start, end)
+    if scalene_args:
+        scalene_args = scalene_args.split()
 
     conv_script = notebook_to_python(notebook_to_python, cells=cells)
-    subprocess.run(["scalene", *scalene_args, conv_script])
+
+    # fix encoding error when using cuda
+    my_env = os.environ.copy()
+    my_env["LC_ALL"] = "POSIX"
+    subprocess.run(["scalene", *scalene_args, conv_script], env=my_env)
 
     if cleanup:
         os.remove(conv_script)
 
 
 if __name__=="__main__":
-    app(prog_name=APP_NAME)
+    typer.run(profile)
