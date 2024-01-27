@@ -38,3 +38,16 @@ _Conclusion:_
 _Conclusion_:
 
 - Get your ass to work
+
+## Discussions with People
+
+- Use different iterations of a model to verify the results from correlating
+  number of iterations and spread. The architecture and pretraining haven't
+  changed, therefore we don't expect to see any changes in the metric. (Felix)
+
+- If the few-shot learning ability of a model is the same for training time as
+  for testing time, we can imagine a situation in which a user-induced one-shot
+  example is sufficient to revert the safety training. This leads to two
+  questions: (i) Are training-time and inference time fine-tuning equivalent,
+  and (ii) does this actually imply that improved few-shot learning ability
+  directly counteracts safety?
