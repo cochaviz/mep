@@ -117,13 +117,31 @@ This was a paper referenced in the previous paper, and one that I discovered
 independently and wanted to read anyway. This probably means it should be a
 useful one to understand?
 
-## GPTFuzzer: Red-Teaming Large Language Models with Aut-Generated Jailbreak Prompts - Yu et al.
+## Large Language Models are Few-Shot Learners
+
+In this paper, researchers at OpenAI introduce GPT-3. Here, they specifically
+consider the task of zero-, one-, and few-shot _in-context_ learning and its
+impact on accuracy. In context-learning ability refers to the improved task
+performance when presented with examples of the task in the current text
+context. By showing GPT-3 examples in natural language before asking it to
+perform a task, it shows improved capabilities. In the paper, this is referred
+to as few-shot learning, which is different from few-shot learning in the
+traditional sense which refers to classification tasks where the number of
+examples in a particular class is small.
+
+They did this specifically to evaluate the generalization performance of GPT-3,
+I guess coming from the perspective of a non-expert that could simply show a
+couple of examples for a task instead of needing technical knowledge on
+fine-tuning. However, this does beg the question: is this a 'more powerful
+method' than traditional fine-tuning or vice-versa? This is a particularly
+interesting question with regard to the idea of adaptability as an integral part
+of security.
+
+## GPTFuzzer: Red-Teaming Large Language Models with Aut-Generated Jailbreak Prompts - Yu et al
 
 Reproducing the paper seems super easy given that all the code is [available on
 github](https://github.com/sherdencooper/GPTFuzz) and it seems really easy to
 work with.
-
-The great 
 
 ## Jargon
 

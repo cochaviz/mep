@@ -135,8 +135,6 @@ but I do think the following criteria will be important (in order of importance)
 
 ## Datasets of Adversarial Examples
 
-
-
 ## Security Definitions
 
 - I think one thing to keep in mind is that **there is more to NLP than
@@ -156,3 +154,141 @@ but I do think the following criteria will be important (in order of importance)
     scrutinized than a system that is 90% secure. Showing the same information
     in a different way can have the effect of making systems more secure
     overall.
+
+- At the very least, security should be concerned with active exploitation of
+  the large language model. Safety includes this security aspect, but also
+  encapsulates things like moral behavior and the consideration that users
+  should somehow also be protected from themselves. Security _could_ impact the
+  user, as external parties can perform data exfiltration, and should therefore
+  be considered part of safety.
+
+## Top-Down vs. Bottom-Up
+
+I can currently think of two ways in which we can tackle the issue of
+security: (i) bottom-up: security is an issue that should be incorporated into
+an LLM by design, and (ii) top-down: our primary goal is to create a
+functioning system, and security can be considered after the fact. Personally,
+I'm a fan of the first approach. This begs the question: why are so many
+people looking at perspective (ii)?
+
+I can think of at least one practical reason to take a top-down approach: "LLMs
+are here, so let's at least try to make them safe." But this is not very
+satisfying - it does not justify why we shouldn't just do the bare minimum and
+start creating _fundamentally safe models_ (whatever that may mean). There are,
+potentially, more fundamental issues with security in the context of LLMs that
+make the matter of secure by design less convincing. Here, it makes sense to
+define what I consider security, and not to forger, safety:
+
+- _Security_: The ability to resist active exploitation of an LLM. That is, the
+  ability to resist activities that attempt to undermine systems set in place to
+  make sure the model follows the policy.
+
+- _Safety_: The ability of the system to follow the policy.
+
+At the heart of these two definitions is the issue of _alignment_. However, the
+goal of security, I would argue, is well-defined, while that of safety is not.
+That is, the difference lies at the specificiability of their goals. Here, I
+will present an argument as to why I think that is, and why that would imply the
+justification of why both approaches are necessary.
+
+The quality of alignment is the specificity of the policy together with the
+generalizability of the model.
+
+### Justification of the Definitions
+
+<!-- Insert the preface on safety and security -->
+
+### Consequences
+
+Firstly, and observation: security only needs to be considered if a model has
+safety requirements: if there is no policy, safety is not a concern and neither
+is security. Safety is necessary for security. In my opinion, this quality of
+the definition is sensible when we look at the root cause of ensuring both
+security and safety of an LLM.
+
+Take a more complex example as shown by this [blog
+post](https://www.windowscentral.com/software-apps/bing/gpt-4-vision-a-breakthrough-in-image-deciphering-unveils-potential-for-prompt-injection-attacks).
+They discuss prompt injection through images, instead of text. There is a lot
+more going on here than in the previous example, but I want to separate it into
+two problems: (i) the prompt should not have been executed because it was
+asked to describe the image, not execute the prompt in the image; and (ii) the
+web-request should not have been executed. The first is clearly a problem of
+generalization: the model did something it was not supposed to do because it did
+not interpret parts of the input as the correct part of the task.
+
+## Types of Inference Attacks on LLMs
+
+The following is a taxonomy of jailbreaking attacks on LLMs presented by
+@mozesUseLLMsIllicit2023. The root category here distinguishes between two
+mechanisms or timings of alignment: inference-time through system prompts, and
+training-time through fine-tuning.
+
+### Prompt injection
+
+I personally find this a misnomer. Prompt leaking has nothing to do with
+injection, and neither is goal hijacking. Given the observation above, we might
+consider this system prompt defiance, or _I-jailbreaking_.
+
+- _Prompt Leaking_: The ability of users to access an LLM’s system prompt
+  represents a vulnerability since knowledge of the prompt can help them carry
+  out malicious activities by bypassing the model’s safety instructions.
+
+- _Goal Hijacking_: The aim of goal hijacking in the context of prompt injection
+  is to manipulate an LLM into ignoring its instructions received from the
+  system prompt.
+
+- _Indirect prompt injection attacks_: In addition to the aforementioned
+  efforts, other recent works propose indirect approaches to injecting malicious
+  prompts into LLMs (i.e., without directly querying the model).
+
+- _Prompt injection for multi-modal models_: Recent advancements in computer
+  vision and natural language processing have promoted the development of
+  multi-modal LLMs that can process and generate information across various
+  modalities, including text, images, and audio. In light of the susceptibility
+  of LLMs to injection attacks, Bagdasaryan et al. (2023) investigate potential
+  security vulnerabilities related to such attacks within multi-modal LLMs.
+
+### Jailbreaking
+
+As the authors put it, jailbreaking does not involve breaking the system prompt.
+While does not seem directly intuitive to me, I can see how this nicely
+distinguishes between breaking training-time alignment and inference-time
+alignment. So let's go with that for now, or _T-jailbreaking_ for clarity.
+
+- _Universal adversarial triggers_: While the term jailbreaking has only
+  recently been used in this context, the idea of triggering the generation of
+  harmful content from language models has previously been explored in the
+  context of NLP (Wallace et al., 2019a; Xu et al., 2022).
+
+- _Jailbreaking to extract PII_: While the previous works focused on using
+  jailbreaking to predominantly generate harmful language, Li et al. (2023a)
+  provide a different use case of jailbreaking in practice, by demonstrating how
+  the technique can be used to successfully extract PII from ChatGPT and Bing
+  Chat.
+
+- _Jailbreaking for instruction-following_: Other work focuses on language
+  models specifically trained via instruction-following (Ouyang et al., 2022).
+  To do so, Qiu et al. (2023) present a dataset specifically for English-Chinese
+  translation tasks that contains malicious instructions.
+
+- _Jailbreaking and traditional computer security_: There have also been efforts
+  viewing LLM jailbreaking through the lens of traditional computer security.
+  Kang et al. (2023) hypothesize that instruction tuning of LLMs results in
+  models that behave more similarly to standard computer programming.
+
+### Observations
+
+It seems like an I-jailbreaking attack has do defy both inference- and
+training-time alignment. We could therefore present the system prompt as a good
+measure to further strengthen the alignment of a model. However, I do not think
+that this means that system prompts are a good safety or security measure. Since
+they are part of the current context, we cannot rely on this to be either
+_confidential_, _integral_, or _accessible_. If all of these qualities can be
+fundamentally addressed, we might be able to use system prompts as a security or
+safety measure. Until then, we should assume tampering and can therefore not
+use it as a trusted measure for security or safety.
+
+Is one necessarily stronger than the other? That is, can we rely on
+training-time alignment to be more resistant to jailbreaking than inference-time
+alignment? ==Does prompt-based fine-tuning perform better than traditional
+fine-tuning? (I really need to understand what these terms mean confidently)==
