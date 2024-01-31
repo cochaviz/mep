@@ -39,6 +39,7 @@ _Conclusion_:
 
 - Get your ass to work
 
+<<<<<<< Updated upstream
 ## Discussions with People
 
 - Use different iterations of a model to verify the results from correlating
@@ -51,3 +52,31 @@ _Conclusion_:
   questions: (i) Are training-time and inference time fine-tuning equivalent,
   and (ii) does this actually imply that improved few-shot learning ability
   directly counteracts safety?
+=======
+## 31 Jan 2024
+
+_Agenda:_
+
+- Finally, I have all my credits
+- Started working on the Fuzzer, but I realised after it might be better to work
+  on reproducing the paper by Zhao et al. (IFH)
+- Deliberated heavily on the definitions of safety vs. security. Why? Everyone
+  seems to use them as interchangeable and, to me, it seems like the goal of
+  security is a lot more well-defined than safety. This would make security more
+  'solvable' than safety. Using the terms wrong can lead to confusion and a
+  misdirection of efforts.
+- On a similar threat, I was wondering about a counter-argument to the issue of
+  'adaptability' as an attribute to safety: if this means that prompt-based
+  fine-tuning is also more effective, does that imply that jailbreaks that use
+  _competing objectives_ as a failure more are also more effective?
+- In essence, what I would like to do is to determine whether security and
+  safety somehow differ in how-well defined their policy is. Maybe we can even
+  somehow show that the issue of security is indeed 'well-defined' (whatever
+  that may mean). If this is the case, there is a strong argument to be made for
+  the prospect of separate systems that identify malicious prompts.
+
+_Conclusion:_
+
+- None of my premises were refuted, so that's nice I guess.
+- Get to work, but hopefully there will be someone that could help me out.
+>>>>>>> Stashed changes
