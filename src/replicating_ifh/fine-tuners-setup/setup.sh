@@ -20,18 +20,19 @@ if [[ $# -lt 1 ]]; then
 fi
 
 # check if the user wants to set up all fine-tuners
-if [[ $1 -eq "all" ]]; then
+if [[ $1 == "all" ]]; then
     methods=("lmbff" "adapet")
 else
     methods=($1)
 fi
 
 # check if the user wants to set up the fine-tuners from a remote repository
-if [[ $2 -eq "--remote" ]]; then
+if [[ $2 == "--remote" ]]; then
     remote=true
     echo "Running from remote repository"
 else
     echo "Running from local repository"
+
     # check if user is in the correct directory
     if [[ ! -d "fine-tuners-setup" ]]; then
         echo "Please run this script one directory above fine-tuners-setup."
@@ -41,6 +42,8 @@ fi
 
 # set up the fine-tuners
 for method in "${methods[@]}"; do
+    echo "Setting up: $method..."
+
     if [[ $remote -eq true ]]; then
         setup_remote $method
     else
