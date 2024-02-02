@@ -1,7 +1,7 @@
 # #!/usr/bin/bash
 
 # clone the repo if it doesn't exist
-if ! [ -f "LM_BFF" ]; then
+if ! [ -d "LM_BFF" ]; then
     git clone git@github.com:princeton-nlp/LM-BFF.git LM_BFF \
         || git clone https://github.com/princeton-nlp/LM-BFF.git LM_BFF
 fi

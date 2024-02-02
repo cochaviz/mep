@@ -1,7 +1,7 @@
 # #!/usr/bin/bash
 
 # clone the repo if it doesn't exist
-if ! [ -f ADAPET ]; then
+if ! [ -d "ADAPET" ]; then
     git clone git@github.com:rrmenon10/ADAPET.git ADAPET \
         || git clone https://github.com/rrmenon10/ADAPET.git ADAPET
 fi
