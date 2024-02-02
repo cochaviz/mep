@@ -1,12 +1,14 @@
 # #!/usr/bin/bash
 
+dirname="lmbff"
+
 # clone the repo if it doesn't exist
-if ! [ -d "LM_BFF" ]; then
-    git clone git@github.com:princeton-nlp/LM-BFF.git LM_BFF \
-        || git clone https://github.com/princeton-nlp/LM-BFF.git LM_BFF
+if ! [ -d "$dirname" ]; then
+    git clone git@github.com:princeton-nlp/LM-BFF.git $dirname \
+        || git clone https://github.com/princeton-nlp/LM-BFF.git $dirname
 fi
 
-cd LM_BFF && git pull 
+cd $dirname && git pull 
 
 # # create the conda environment if it doesn't exist
 conda env list | grep "lmbff" \

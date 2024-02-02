@@ -1,12 +1,14 @@
 # #!/usr/bin/bash
 
+dirname="adapet"
+
 # clone the repo if it doesn't exist
-if ! [ -d "ADAPET" ]; then
-    git clone git@github.com:rrmenon10/ADAPET.git ADAPET \
-        || git clone https://github.com/rrmenon10/ADAPET.git ADAPET
+if ! [ -d "$dirname" ]; then
+    git clone git@github.com:rrmenon10/ADAPET.git $dirname \
+        || git clone https://github.com/rrmenon10/ADAPET.git $dirname
 fi
 
-cd ADAPET && git pull 
+cd $dirname && git pull 
 
 # BEGIN rrmenon10/ADAPET/blob/master/bin/init.sh
 if [ ! -d "data/superglue/" ] ; then
