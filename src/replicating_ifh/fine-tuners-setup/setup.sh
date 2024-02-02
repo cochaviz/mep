@@ -13,12 +13,6 @@ function setup_remote() {
 
 remote=false
 
-# check if user is in the correct directory
-if [[ ! -d "fine-tuners-setup" ]]; then
-    echo "Please run this script one directory above fine-tuners-setup."
-    exit 1
-fi
-
 # check if user is running the script with the correct number of arguments
 if [[ $# -lt 1 ]]; then
     echo "Usage: $0 <method> [--remote]"
@@ -38,6 +32,11 @@ if [[ $2 -eq "--remote" ]]; then
     echo "Running from remote repository"
 else
     echo "Running from local repository"
+    # check if user is in the correct directory
+    if [[ ! -d "fine-tuners-setup" ]]; then
+        echo "Please run this script one directory above fine-tuners-setup."
+        exit 1
+    fi
 fi
 
 # set up the fine-tuners
