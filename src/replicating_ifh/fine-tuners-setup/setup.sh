@@ -1,41 +1,56 @@
-methods=("lmbff" "adapet")
+#!/usr/bin/env bash
 
-if [[ $1 -eq "--remote" ]]; then
+function setup_local() {
+    bash "fine-tuners-setup/$1.sh" \
+    > "$1.log" 2>&1
+}
+
+function setup_remote() {
+    wget -qO- "https://raw.githubusercontent.com/cochaviz/mep/experiments/src/replicating_ifh/fine-tuners-setup/$1.sh" \
+    | bash \
+    > "$1.log" 2>&1
+}
+
+remote=false
+
+# check if user is in the correct directory
+if [[ ! -d "fine-tuners-setup" ]]; then
+    echo "Please run this script one directory above fine-tuners-setup."
+    exit 1
+fi
+
+# check if user is running the script with the correct number of arguments
+if [[ $# -lt 1 ]]; then
+    echo "Usage: $0 <method> [--remote]"
+    exit 1
+fi
+
+# check if the user wants to set up all fine-tuners
+if [[ $1 -eq "all" ]]; then
+    methods=("lmbff" "adapet")
+else
+    methods=($1)
+fi
+
+# check if the user wants to set up the fine-tuners from a remote repository
+if [[ $2 -eq "--remote" ]]; then
+    remote=true
     echo "Running from remote repository"
-
-    for method in "${methods[@]}"; do
-        echo "Running $method"
-        wget -qO- "https://raw.githubusercontent.com/cochaviz/mep/experiments/src/replicating_ifh/fine-tuners-setup/$method.sh" | bash | tee "$method.log"
-
-        if [[ $? -eq 0 ]]; then
-            echo "Successfully set up: $method!"
-        else
-            echo "Failed setting up: $method... Check logs."
-        fi
-    done
 else
     echo "Running from local repository"
+fi
 
-    # check whether user is running the script from withing the folder
-    # 'fine-tuners-setup'
-    if ! [[ -f "all.sh" ]]; then
-        echo "Please run the script from within the folder 'fine-tuners-setup'"
-        exit 1
+# set up the fine-tuners
+for method in "${methods[@]}"; do
+    if [[ $remote -eq true ]]; then
+        setup_remote $method
+    else
+        setup_local $method
     fi
 
-    cd ..
-
-    for method in "${methods[@]}"; do
-        echo "Running $method"
-        bash "fine-tuners-setup/$method.sh" | tee "fine-tuners-setup/$method.log"
-
-        if [[ $? -eq 0 ]]; then
-            echo "Successfully set up: $method!"
-        else
-            echo "Failed setting up: $method... Check logs."
-        fi
-    done
-
-    cd -
-fi
-```
+    if [[ $? -eq 0 ]]; then
+        echo "Successfully set up: $method!"
+    else
+        echo "Failed setting up: $method... Check logs."
+    fi
+done
