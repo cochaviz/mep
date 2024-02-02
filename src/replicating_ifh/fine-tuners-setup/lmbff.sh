@@ -25,10 +25,10 @@ conda run -n lmbff pip install -r requirements-min.txt \
 
 # download the dataset 
 cd data
-if ! [ -f "original" ]; then
-    rm datasets.tar && echo "Removed old 'datasets.tar'"
+if ! [ -d "original" ]; then
     chmod +x download_dataset.sh
     ./download_dataset.sh
+    rm datasets.tar
 fi
 cd ..
 

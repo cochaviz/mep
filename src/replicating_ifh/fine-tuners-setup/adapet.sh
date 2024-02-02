@@ -39,3 +39,8 @@ conda env list | grep "adapet" \
 
 # install dependencies with conda
 conda run -n adapet pip install -r requirements.txt
+
+# set environment variables
+conda env config vars set ADAPET_ROOT="$PWD"
+conda env config vars set PYTHONPATH="$ADAPET_ROOT:$PYTHONPATH"
+conda env config vars set PYTHON_EXEC="python"
