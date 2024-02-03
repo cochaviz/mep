@@ -4,8 +4,8 @@ dirname="adapet"
 
 # clone the repo if it doesn't exist
 if ! [ -d "$dirname" ]; then
-    git clone git@github.com:rrmenon10/ADAPET.git $dirname \
-        || git clone https://github.com/rrmenon10/ADAPET.git $dirname
+    git clone git@github.com:cochaviz/ADAPET.git $dirname \
+        || git clone https://github.com/cochaviz/ADAPET.git $dirname
 fi
 
 cd $dirname && git pull 
@@ -44,5 +44,3 @@ conda run -n adapet pip install -r requirements.txt
 
 # set environment variables
 conda env config vars set ADAPET_ROOT="$PWD" -n adapet
-conda env config vars set PYTHONPATH="$ADAPET_ROOT:$PYTHONPATH" -n adapet
-conda env config vars set PYTHON_EXEC="python" -n adapet
