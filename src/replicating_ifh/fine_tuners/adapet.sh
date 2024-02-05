@@ -1,12 +1,14 @@
 # #!/usr/bin/bash
 
-dirname="adapet"
+dirname="fine_tuners/adapet"
 
-# clone the repo if it doesn't exist
-if ! [ -d "$dirname" ]; then
-    git clone git@github.com:cochaviz/ADAPET.git $dirname \
-        || git clone https://github.com/cochaviz/ADAPET.git $dirname
+if [ -d "$dirname" ]; then
+    echo "Directory $dirname already exists. Please remove it in case you'd like to reset the setup."
+    exit 2
 fi
+
+git clone git@github.com:cochaviz/ADAPET.git $dirname \
+    || git clone https://github.com/cochaviz/ADAPET.git $dirname
 
 cd $dirname && git pull 
 
@@ -44,3 +46,4 @@ conda run -n adapet pip install -r requirements.txt
 
 # set environment variables
 conda env config vars set ADAPET_ROOT="$PWD" -n adapet
+conda env config vars set PYTHONPATH="$PWD:$PYTHONPATH" -n adapet

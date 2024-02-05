@@ -1,12 +1,15 @@
 # #!/usr/bin/bash
 
-dirname="lmbff"
+dirname="fine_tuners/lmbff"
+
+if [ -d "$dirname" ]; then
+    echo "Directory $dirname already exists. Please remove it and try again."
+    exit 2
+fi
 
 # clone the repo if it doesn't exist
-if ! [ -d "$dirname" ]; then
-    git clone git@github.com:princeton-nlp/LM-BFF.git $dirname \
-        || git clone https://github.com/princeton-nlp/LM-BFF.git $dirname
-fi
+git clone git@github.com:princeton-nlp/LM-BFF.git $dirname \
+    || git clone https://github.com/princeton-nlp/LM-BFF.git $dirname
 
 cd $dirname && git pull 
 
@@ -23,7 +26,7 @@ echo -e "$(cat requirements.txt \
 )" > requirements-min.txt
 conda run -n lmbff pip install -r requirements-min.txt \
     --ignore-installed certifi # google colab has certifi has a distutils package
-                              # for _whatever reason_.
+                               # for _whatever reason_.
 
 # download the dataset 
 cd data

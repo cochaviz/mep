@@ -1,12 +1,14 @@
 #!/usr/bin/env bash
 
+base_dir="fine_tuners"
+
 function setup_local() {
-    bash "fine-tuners-setup/$1.sh" \
+    bash "$base_dir/$1.sh" \
     > "$1.log" 2>&1
 }
 
 function setup_remote() {
-    wget -qO- "https://raw.githubusercontent.com/cochaviz/mep/experiments/src/replicating_ifh/fine-tuners-setup/$1.sh" \
+    wget -qO- "https://raw.githubusercontent.com/cochaviz/mep/experiments/src/replicating_ifh/$base_dir/$1.sh" \
     | bash \
     > "$1.log" 2>&1
 }
@@ -34,8 +36,8 @@ else
     echo "Running from local repository"
 
     # check if user is in the correct directory
-    if [[ ! -d "fine-tuners-setup" ]]; then
-        echo "Please run this script one directory above fine-tuners-setup."
+    if [[ ! -d "$base_dir" ]]; then
+        echo "Please run this script one directory above $base_dir."
         exit 1
     fi
 fi
@@ -44,7 +46,7 @@ fi
 for method in "${methods[@]}"; do
     echo "Setting up: $method..."
 
-    if [[ $remote -eq true ]]; then
+    if $remote ; then
         setup_remote $method
     else
         setup_local $method
@@ -52,7 +54,9 @@ for method in "${methods[@]}"; do
 
     if [[ $? -eq 0 ]]; then
         echo "Successfully set up: $method!"
+    elif [[ $? -eq 2 ]]; then
+        echo "Setup already exists: $method... Check logs."
     else
-        echo "Failed setting up: $method... Check logs."
+        echo "Failed to set up: $method... Check logs."
     fi
 done
