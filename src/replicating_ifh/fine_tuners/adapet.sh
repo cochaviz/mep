@@ -1,6 +1,6 @@
 # #!/usr/bin/bash
 
-dirname="fine_tuners/adapet"
+dirname="adapet"
 
 if [ -d "$dirname" ]; then
     echo "Directory $dirname already exists. Please remove it in case you'd like to reset the setup."

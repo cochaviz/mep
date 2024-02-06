@@ -1,6 +1,6 @@
 # #!/usr/bin/bash
 
-dirname="fine_tuners/lmbff"
+dirname="lmbff"
 
 if [ -d "$dirname" ]; then
     echo "Directory $dirname already exists. Please remove it and try again."
