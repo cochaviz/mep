@@ -7,18 +7,14 @@ from enum import Enum
 import pandas as pd
 from datasets import load_dataset_builder
 
+from fine_tuners import AvailableFineTuner
+
 fs_glue_location = os.path.join(os.getcwd(), "data/fs_glue")
 fs_glue_default_location = os.path.join(fs_glue_location, "default")
 
 glue_task_names = [ "cola", "mrpc", "qqp", "mnli", "qnli", "rte" , "sst2" ]
 superglue_task_names = [ "boolq", "cb", "copa" , "wic" ]
 fs_glue_task_names = glue_task_names + superglue_task_names
-
-class AvailableFineTuner(str, Enum):
-    none = "none"
-    lmbff = "lmbff"
-    adapet = "adapet"
-    all = "all"
 
 class AvailableDataset(str, Enum):
     none = "none"
@@ -160,8 +156,8 @@ def download_and_prepare(
     fine_tuner: AvailableFineTuner,
     random_state: int=42
 ):
-    dataset = [ dataset.value ]
-    fine_tuner = [ fine_tuner.value ]
+    dataset = [ dataset ]
+    fine_tuner = [ fine_tuner ]
 
     if "none" in dataset:
         dataset = [ ]
