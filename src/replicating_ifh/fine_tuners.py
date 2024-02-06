@@ -25,11 +25,12 @@ def setup_remote(method: AvailableFineTuner):
     remote_file = subprocess.Popen(
         ["wget", "-qO-", f"{remote_location}/{method}.sh"]
         , stdout=subprocess.PIPE)
-    subprocess.run(["bash"], 
+    setup = subprocess.run(["bash"], 
                    stdout=open(f"{base_dir}/{method}.log", "w"), 
                    stdin=remote_file.stdout, 
                    cwd=base_dir)
     remote_file.wait()
+    return setup
 
 def download_and_prepare(
     fine_tuner: AvailableFineTuner,
