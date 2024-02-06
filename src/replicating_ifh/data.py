@@ -61,7 +61,7 @@ def _download_fs_glue():
 
     print (f"Done.")
 
-def _parse_for_lmbff(tasks, n_samples=64, random_state=42):
+def _parse_for_lmbff(tasks, n_samples=64, random_state=42, force=False):
     """
     LMBFF expects a specific format for the datasets. This function will parse
     the datasets. Instead of randomly sampling in the training phase, ADAPET
@@ -76,10 +76,15 @@ def _parse_for_lmbff(tasks, n_samples=64, random_state=42):
 
     lmbff_location = os.path.join(fs_glue_location, "lmbff")
 
+    if force:
+        import shutil
+        shutil.rmtree(lmbff_location)
+
     try:
         os.mkdir(lmbff_location)
     except FileExistsError:
         print(f"[setup:parse:lmbff] Directory '{lmbff_location}' already exists. If you'd like to re-run this function, please remove the directory first.")
+        return
 
     for task_name, task in tasks.items():
         output_dir = os.path.join(fs_glue_location, "lmbff", task_name)
@@ -89,15 +94,15 @@ def _parse_for_lmbff(tasks, n_samples=64, random_state=42):
             if "train" in split:
                 file_location = os.path.join(output_dir, "train.tsv")
                 subset = data.sample(n=n_samples, random_state=random_state)
-                subset.to_csv(file_location, sep="\t")
+                subset.to_csv(file_location, sep="\t", index=False)
 
             if "test" in split:
                 file_location = os.path.join(output_dir, "test.tsv")
-                data.to_csv(file_location, sep="\t")
+                data.to_csv(file_location, sep="\t", index=False)
 
             if "validation" in split:
                 file_location = os.path.join(output_dir, "dev.tsv")
-                data.to_csv(file_location, sep="\t")
+                data.to_csv(file_location, sep="\t", index=False)
 
 def _parse_for_adapet(tasks, random_state=42):
     """
@@ -117,9 +122,6 @@ def _parse_for_adapet(tasks, random_state=42):
     except FileExistsError:
         print(f"[setup:parse:adapet] Directory '{adapet_location}' already exists. If you'd like to re-run this function, please remove the directory first.")
 
-    def rearrange_columns(data):
-        return data[["index", "question", "passage", "label"]]
-                
     for task_name, task in tasks.items():
         output_dir = os.path.join(fs_glue_location, "adapet", task_name)
         os.mkdir(output_dir)
@@ -134,7 +136,7 @@ def _parse_for_adapet(tasks, random_state=42):
                 unlabeled = data.drop(columns="label")
                 unlabeled.to_json(file_location, orient="records", lines=True)
 
-def _parse_datasets(fine_tuners: list[str]):
+def _parse_datasets(fine_tuners: list[str], force=False):
     fs_glue = {}
 
     for task in fs_glue_task_names:
@@ -147,14 +149,15 @@ def _parse_datasets(fine_tuners: list[str]):
               
     for fine_tuner in fine_tuners:
         if fine_tuner == "lmbff":
-            _parse_for_lmbff(fs_glue)
+            _parse_for_lmbff(fs_glue, force=force)
         if fine_tuner == "adapet":
-            _parse_for_adapet(fs_glue)
+            _parse_for_lmbff(fs_glue, force=force)
 
 def download_and_prepare(
     dataset: AvailableDataset,
     fine_tuner: AvailableFineTuner,
-    random_state: int=42
+    random_state: int=42,
+    force: bool=False
 ):
     dataset = [ dataset ]
     fine_tuner = [ fine_tuner ]
@@ -177,8 +180,11 @@ def download_and_prepare(
 
     print("Parsing datasets...") 
     print(f"Fine-tuners: {fine_tuner}")
+    
+    if force:
+        print("Forcing re-parsing of datasets.")
 
-    _parse_datasets(fine_tuner) 
+    _parse_datasets(fine_tuner, force=force) 
  
     print("Done.")
         
