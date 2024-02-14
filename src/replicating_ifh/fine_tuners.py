@@ -11,9 +11,10 @@ remote_location = f"https://raw.githubusercontent.com/cochaviz/mep/experiments/s
 
 class AvailableFineTuner(str, Enum):
     none = "none"
+    all = "all"
+
     lmbff = "lmbff"
     adapet = "adapet"
-    all = "all"
 
 def setup_local(method: AvailableFineTuner):
     return subprocess.run(["bash", f"fine_tuners/{method}.sh"], 
@@ -44,6 +45,8 @@ def download_and_prepare(
         return
     if "all" in fine_tuner:
         methods = [ e.value for e in AvailableFineTuner ]
+        methods.remove("none")
+        methods.remove("all")
 
     try:
         os.mkdir("fine_tuners")

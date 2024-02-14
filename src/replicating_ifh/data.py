@@ -18,9 +18,10 @@ fs_glue_task_names = glue_task_names + superglue_task_names
 
 class AvailableDataset(str, Enum):
     none = "none"
+    all = "all"
+
     fs_glue = "fs_glue"
     fs_nli = "fs_nli"
-    all = "all"
 
 def _download_fs_glue():
     if os.path.isdir(fs_glue_default_location):
@@ -121,6 +122,7 @@ def _parse_for_adapet(tasks, random_state=42):
         os.mkdir(adapet_location)
     except FileExistsError:
         print(f"[setup:parse:adapet] Directory '{adapet_location}' already exists. If you'd like to re-run this function, please remove the directory first.")
+        return
 
     for task_name, task in tasks.items():
         output_dir = os.path.join(fs_glue_location, "adapet", task_name)
@@ -151,7 +153,7 @@ def _parse_datasets(fine_tuners: list[str], force=False):
         if fine_tuner == "lmbff":
             _parse_for_lmbff(fs_glue, force=force)
         if fine_tuner == "adapet":
-            _parse_for_lmbff(fs_glue, force=force)
+            _parse_for_adapet(fs_glue)
 
 def download_and_prepare(
     dataset: AvailableDataset,
@@ -169,8 +171,12 @@ def download_and_prepare(
 
     if "all" in dataset:
         dataset = [ e.value for e in AvailableDataset ]
+        dataset.remove("all")
+        dataset.remove("none")
     if "all" in fine_tuner:
         fine_tuner = [ e.value for e in AvailableFineTuner ]
+        fine_tuner.remove("all")
+        fine_tuner.remove("none")
 
     print("Downloading datasets...")
     print(f"Datasets: {dataset}")
