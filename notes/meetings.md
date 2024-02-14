@@ -39,7 +39,6 @@ _Conclusion_:
 
 - Get your ass to work
 
-<<<<<<< Updated upstream
 ## Discussions with People
 
 - Use different iterations of a model to verify the results from correlating
@@ -52,7 +51,7 @@ _Conclusion_:
   questions: (i) Are training-time and inference time fine-tuning equivalent,
   and (ii) does this actually imply that improved few-shot learning ability
   directly counteracts safety?
-=======
+
 ## 31 Jan 2024
 
 _Agenda:_
@@ -79,4 +78,29 @@ _Conclusion:_
 
 - None of my premises were refuted, so that's nice I guess.
 - Get to work, but hopefully there will be someone that could help me out.
->>>>>>> Stashed changes
+
+## Feb 14
+
+_Agenda_:
+
+- I've done what I was supposed to do!
+  - Reproduced the basics of the methodology (recreating it 1-to-1 takes too
+    much time).
+  - Reproduced the analysis (based on their exported raw results).
+- My plan for the next two weeks:
+  - Create and find a task based on the two failure modes.
+  - Investigate other sources for determining the difficulty of tasks.
+  - Apply my dataset to the setup I have now.
+  - Discuss some of my smaller ideas with your students.
+- Should I:
+  - Verify their results with stats from online leaderboards?
+  - ~First focus on other methods of comparing task difficulty?~
+
+_Conclusion_:
+
+- Good on track.
+- Next week I'll present a plan for the thesis schedule.
+- Some ideas to consider:
+  - Mann Whitney U Test
+  - Active learning
+  - Compare different methods and determine their contributive power
