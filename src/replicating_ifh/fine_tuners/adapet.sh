@@ -1,12 +1,16 @@
 # #!/usr/bin/bash
 
-# clone the repo if it doesn't exist
-if ! [ -f ADAPET ]; then
-    git clone git@github.com:rrmenon10/ADAPET.git ADAPET \
-        || git clone https://github.com/rrmenon10/ADAPET.git ADAPET
+dirname="adapet"
+
+if [ -d "$dirname" ]; then
+    echo "Directory $dirname already exists. Please remove it in case you'd like to reset the setup."
+    exit 2
 fi
 
-cd ADAPET && git pull 
+git clone git@github.com:cochaviz/ADAPET.git $dirname \
+    || git clone https://github.com/cochaviz/ADAPET.git $dirname
+
+cd $dirname && git pull 
 
 # BEGIN rrmenon10/ADAPET/blob/master/bin/init.sh
 if [ ! -d "data/superglue/" ] ; then
@@ -39,3 +43,7 @@ conda env list | grep "adapet" \
 
 # install dependencies with conda
 conda run -n adapet pip install -r requirements.txt
+
+# set environment variables
+conda env config vars set ADAPET_ROOT="$PWD" -n adapet
+conda env config vars set PYTHONPATH="$PWD:$PYTHONPATH" -n adapet
