@@ -3,10 +3,7 @@
 import glob
 import os
 from enum import Enum
-<<<<<<< HEAD
-=======
 import subprocess
->>>>>>> experiments
 
 import pandas as pd
 from datasets import load_dataset_builder
@@ -20,14 +17,6 @@ glue_task_names = [ "cola", "mrpc", "qqp", "mnli", "qnli", "rte" , "sst2" ]
 superglue_task_names = [ "boolq", "cb", "copa" , "wic" ]
 fs_glue_task_names = glue_task_names + superglue_task_names
 
-<<<<<<< HEAD
-class AvailableDataset(str, Enum):
-    none = "none"
-    all = "all"
-
-    fs_glue = "fs_glue"
-    fs_nli = "fs_nli"
-=======
 class DatasetOptions(str, Enum):
     none = "none"
     all = "all"
@@ -35,7 +24,6 @@ class DatasetOptions(str, Enum):
 class AvailableDataset(str, Enum):
     fs_glue = "fs_glue"
     jfmd = "jfmd"
->>>>>>> experiments
 
 def _download_fs_glue():
     if os.path.isdir(fs_glue_default_location):
@@ -65,11 +53,8 @@ def _download_fs_glue():
     # rename files
     for file in glob.glob(f"{fs_glue_default_location}/*/*.parquet"):
         dirname = os.path.dirname(file)
-<<<<<<< HEAD
-=======
         new_file = ""
 
->>>>>>> experiments
         if "train" in file:
             new_file = os.path.join(dirname, "train.parquet")
         if "test" in file:
@@ -81,14 +66,10 @@ def _download_fs_glue():
 
     print (f"Done.")
 
-<<<<<<< HEAD
-def _parse_for_lmbff(tasks, n_samples=64, random_state=42, force=False):
-=======
 def _download_jfmd():
     print(subprocess.call([ "bash", "jfmd.sh" ], cwd="data"))
 
 def _prepare_for_lmbff(tasks, n_samples=64, random_state=42, force=False):
->>>>>>> experiments
     """
     LMBFF expects a specific format for the datasets. This function will parse
     the datasets. Instead of randomly sampling in the training phase, ADAPET
@@ -131,11 +112,7 @@ def _prepare_for_lmbff(tasks, n_samples=64, random_state=42, force=False):
                 file_location = os.path.join(output_dir, "dev.tsv")
                 data.to_csv(file_location, sep="\t", index=False)
 
-<<<<<<< HEAD
-def _parse_for_adapet(tasks, random_state=42):
-=======
 def _prepare_for_adapet(tasks, random_state=42):
->>>>>>> experiments
     """
     ADAPET expects json format for the datasets. This includes the 'question',
     'passage' 'index' and 'label' fields. 
@@ -168,9 +145,6 @@ def _prepare_for_adapet(tasks, random_state=42):
                 unlabeled = data.drop(columns="label")
                 unlabeled.to_json(file_location, orient="records", lines=True)
 
-<<<<<<< HEAD
-def _parse_datasets(fine_tuners: list[str], force=False):
-=======
 def _download(datasets: list[AvailableDataset]):
     print("Downloading datasets...")
     print(f"Datasets: {datasets}")
@@ -188,7 +162,6 @@ def _prepare(fine_tuners: list[str], force=False):
     if force:
         print("Forcing re-parsing of datasets.")
 
->>>>>>> experiments
     fs_glue = {}
 
     for task in fs_glue_task_names:
@@ -200,15 +173,6 @@ def _prepare(fine_tuners: list[str], force=False):
             fs_glue[task][file.split('.')[0]] = pd.read_parquet(os.path.join(task_dir, file))
               
     for fine_tuner in fine_tuners:
-<<<<<<< HEAD
-        if fine_tuner == "lmbff":
-            _parse_for_lmbff(fs_glue, force=force)
-        if fine_tuner == "adapet":
-            _parse_for_adapet(fs_glue)
-
-def download_and_prepare(
-    dataset: AvailableDataset,
-=======
         if fine_tuner == AvailableFineTuner.lmbff:
             _prepare_for_lmbff(fs_glue, force=force)
         if fine_tuner == AvailableFineTuner.adapet:
@@ -216,43 +180,10 @@ def download_and_prepare(
 
 def download_and_prepare(
     dataset: DatasetOptions | AvailableDataset,
->>>>>>> experiments
     fine_tuner: AvailableFineTuner,
     random_state: int=42,
     force: bool=False
 ):
-<<<<<<< HEAD
-    dataset = [ dataset ]
-    fine_tuner = [ fine_tuner ]
-
-    if "none" in dataset:
-        dataset = [ ]
-    if "none" in fine_tuner:
-        fine_tuner = [ ]
-
-    if "all" in dataset:
-        dataset = [ e.value for e in AvailableDataset ]
-        dataset.remove("all")
-        dataset.remove("none")
-    if "all" in fine_tuner:
-        fine_tuner = [ e.value for e in AvailableFineTuner ]
-        fine_tuner.remove("all")
-        fine_tuner.remove("none")
-
-    print("Downloading datasets...")
-    print(f"Datasets: {dataset}")
-
-    if "fs_glue" in dataset:
-        _download_fs_glue()
-
-    print("Parsing datasets...") 
-    print(f"Fine-tuners: {fine_tuner}")
-    
-    if force:
-        print("Forcing re-parsing of datasets.")
-
-    _parse_datasets(fine_tuner, force=force) 
-=======
     datasets = [ dataset ]
     fine_tuners = [ fine_tuner ]
 
@@ -268,14 +199,9 @@ def download_and_prepare(
 
     _download(datasets)
     _prepare(fine_tuners, force=force) 
->>>>>>> experiments
  
     print("Done.")
         
 if __name__ == "__main__":
     import typer
-<<<<<<< HEAD
-
-=======
->>>>>>> experiments
     typer.run(download_and_prepare)

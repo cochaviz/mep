@@ -133,11 +133,6 @@ but I do think the following criteria will be important (in order of importance)
   judgements, the better we will be able to determine whether my metric is
   adequate for varied policies.)
 
-<<<<<<< HEAD
-## Datasets of Adversarial Examples
-
-=======
->>>>>>> experiments
 ## Security Definitions
 
 - I think one thing to keep in mind is that **there is more to NLP than
@@ -158,7 +153,6 @@ but I do think the following criteria will be important (in order of importance)
     in a different way can have the effect of making systems more secure
     overall.
 
-<<<<<<< HEAD
 - At the very least, security should be concerned with active exploitation of
   the large language model. Safety includes this security aspect, but also
   encapsulates things like moral behavior and the consideration that users
@@ -296,7 +290,7 @@ Is one necessarily stronger than the other? That is, can we rely on
 training-time alignment to be more resistant to jailbreaking than inference-time
 alignment? ==Does prompt-based fine-tuning perform better than traditional
 fine-tuning? (I really need to understand what these terms mean confidently)==
-=======
+
 ## Datasets of Adversarial Examples
 
 So there are various places where we could get these adversarial datasets from,
@@ -336,4 +330,3 @@ Working title: _JB-FaMe_
 ### Competing Objectives
 
 1.
->>>>>>> experiments
