@@ -22,6 +22,7 @@ consequence:
 3. While there is a distinction between safety and security, they are very
    closely related. Does, in the case of LLMs, security have some predictive
    value with regard to safety?
+<<<<<<< Updated upstream
 
 I guess I'm something
 between individual
@@ -52,3 +53,5 @@ I don't know, ask you father.
 Dad, I need to pee.
 
 > Overcome, don't come over.
+=======
+>>>>>>> Stashed changes
