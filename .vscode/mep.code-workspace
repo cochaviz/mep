@@ -1,0 +1,16 @@
+{
+  "folders": [
+    {
+      "path": "../"
+    },
+    {
+      "path": "../src/replicating_ifh"
+    },
+    {
+      "path": "../src/jbfame"
+    }
+  ],
+  "settings": {
+    "pandocMarkdownPreview.extraPandocArguments": "--citeproc -F pandoc-crossref $([ -f ./metadata.yaml ] && echo \"--metadata=metadata.yaml\") -f markdown+mark"
+  }
+}
