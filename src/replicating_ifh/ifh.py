@@ -117,7 +117,11 @@ def run_lora(args: TrainingArguments, model, train_set, eval_set):
 
 def run_baseline(args: TrainingArguments, _, train_set, eval_set):
     evaluation = baseline_majority(train_set, eval_set)  
-    open(f"{args.output_dir}/evaluation.json", "w").write(json.dumps(evaluation))
+
+    if not args.report_to:
+        os.mkdir(f"{args.output_dir}")
+        open(f"{args.output_dir}/evaluation.json", "w").write(json.dumps(evaluation))
+
     return evaluation
 
 class MethodRunner():
@@ -233,7 +237,9 @@ def run(args: CustomArguments, training_args: TrainingArgumentsCustomDefaults):
             eval_set = dataset["validation"]
 
             wandb.init(project="ifh", name=training_args.output_dir, reinit=True)
-            MethodRunner.run(method, training_args, model, train_set, eval_set)
+            results = MethodRunner.run(method, training_args, model, train_set, eval_set)
+            wandb.log(results)
+            wandb.finish()
 
 if __name__=="__main__":
     parser = HfArgumentParser([CustomArguments, TrainingArgumentsCustomDefaults])
