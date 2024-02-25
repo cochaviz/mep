@@ -2,7 +2,7 @@
 
 # huggingface
 import time
-from transformers import Trainer, TrainingArguments, AutoTokenizer, AutoModelForSequenceClassification, HfArgumentParser
+from transformers import Trainer, TrainingArguments, AutoTokenizer, PreTrainedTokenizerBase, AutoModelForSequenceClassification, HfArgumentParser
 from datasets import load_dataset, DatasetDict
 from evaluate import combine
 from peft import get_peft_model, LoraConfig, TaskType
@@ -15,7 +15,6 @@ import numpy as np
 import os
 import json
 import dataclasses
-from enum import Enum
 from typing import Any, Optional
 import warnings
 
@@ -23,8 +22,43 @@ glue_tasks = [ "cola", "mrpc", "qqp", "mnli", "qnli", "rte" , "sst2" ]
 superglue_tasks = [ "boolq", "cb", "copa" , "wic" ]
 fs_glue_tasks = glue_tasks + superglue_tasks
 
-def get_data(seed: int, tasks=fs_glue_tasks):
+def get_data(seed: int, tasks: list[str] = fs_glue_tasks, cache_dir: Optional[str] = None):
+    def read_cache(cache_dir, seed, tasks):
+        if cache_dir and os.path.exists(f"{cache_dir}/metadata.json"):
+            print(f"Using cached data from {cache_dir}. Set cache_dir=None to re-download the data.")
+            metadata = json.load(open(f"{cache_dir}/metadata.json"))
+
+            if metadata["train_test_split_shuffle_seed"] == seed:
+                for task in tasks:
+                    if os.path.exists(f"{cache_dir}/{task}"):
+                        fs_glue[task] = DatasetDict.load_from_disk(f"{cache_dir}/{task}")
+
+                return fs_glue, metadata
+            else:            
+                warnings.warn(f"Found cached data, but the seed does not match the current seed. Re-downloading the data.")
+        else:
+            if cache_dir:
+                warnings.warn(f"Cache directory {cache_dir} not found. Re-downloading the data.")
+
+    def write_cache(cache_dir, seed, fs_glue: dict[str, DatasetDict], metadata: dict[str, Any]):
+        if cache_dir:
+            for task, dataset in fs_glue.items():
+                dataset.save_to_disk(f"{cache_dir}/{task}")
+
+            metadata = { "train_test_split_shuffle_seed": seed }
+            json.dump(metadata, open(f"{cache_dir}/metadata.json", "w"))
+            warnings.warn(f"Saved data to {cache_dir}")
+
     fs_glue: dict[ str, DatasetDict ] = {}
+
+    if (fs_glue, metadata := read_cache(cache_dir, seed, tasks)):
+        missing_tasks = set(tasks) - set(fs_glue.keys())
+
+        if len(missing_tasks) == 0:
+            return fs_glue, metadata
+
+        print(f"Found cached data, but the following tasks are missing: {missing_tasks}. Re-downloading the data.")        
+        tasks = missing_tasks
 
     for task in (pbar := tqdm(tasks, desc="Loading FSGLUE tasks")):
         pbar.set_postfix(task=task)
@@ -39,21 +73,70 @@ def get_data(seed: int, tasks=fs_glue_tasks):
         # the matched versions do more closely resemble the train set
         # while the mismatched versions are more supposed to be more challenging
         if task == "mnli":
+            split["train"] = dataset["train"]
             split["validation"] = dataset["validation_mismatched"]
             split["test"] = dataset["test_mismatched"]
-
         # some are not split by default
-        if not isinstance(dataset, DatasetDict):
+        elif not isinstance(dataset, DatasetDict):
             split: DatasetDict = dataset.train_test_split(
                 shuffle=True,
                 seed=seed
             )
+        # others are already split
         else:
-            split = dataset.shuffle(seed=seed)
+            split = dataset
 
         fs_glue[task] = split
 
-    return fs_glue
+    metadata = { "train_test_split_shuffle_seed": seed }
+
+    write_cache(cache_dir, seed, fs_glue, metadata)
+
+    return fs_glue, metadata
+
+def process_data_bert(dataset, tokenizer):
+    def concatenate(sentences):
+        return "[CLS] " + " [SEP] ".join(sentences) + " [SEP]"
+
+    def get_strings(row):
+        return filter(lambda value: isinstance(value, str), row.values())
+
+    def concatenate_sentences(dataset):
+        return { "prompt": concatenate(get_strings(dataset)), "label": dataset["label"] }
+
+    def tokenize_function(batch):
+        return tokenizer(batch["prompt"], padding="max_length", truncation=True)
+
+    return dataset.map(concatenate_sentences).map(tokenize_function, batched=True)
+
+def process_data(data: dict[str, DatasetDict], metadata: Optional[dict], tokenizer: PreTrainedTokenizerBase, cache_dir: Optional[str]):
+    def read_cache(cache_dir: Optional[str], data: dict[str, DatasetDict], metadata: dict, tokenizer: PreTrainedTokenizerBase):
+        if cache_dir and metadata:
+            print(f"Using cached processed data from {cache_dir}. Set cache_dir=None to re-process the data.")
+
+            if "processed" in metadata and metadata["processed"]["model"] == tokenizer.name_or_path:
+                return data, metadata
+            else:
+                warnings.warn(f"Found cached data, but the model does not match the current model. Re-processing the data.")
+
+    def write_cache(cache_dir: Optional[str], data: dict[str, DatasetDict], metadata: dict):
+        if cache_dir:
+            for task, dataset in data.items():
+                dataset.save_to_disk(f"{cache_dir}/{task}")
+
+            json.dump(metadata, open(f"{cache_dir}/metadata.json", "w"))
+            print(f"Saved processed data to {cache_dir}")
+
+    if (cache := read_cache(cache_dir, data, metadata, tokenizer)):
+        return cache
+
+    data = { task: process_data_bert(dataset, tokenizer) for task, dataset in data.items() }
+    metadata["processed"] = { "model": tokenizer.name_or_path }
+
+    write_cache(cache_dir, data, metadata)
+
+    return data, metadata
+
 
 def baseline_majority(train_set, eval_set, metrics=["accuracy"]):
     train_set.with_format("numpy")
@@ -75,20 +158,6 @@ def compute_metrics(eval_pred, metrics=["accuracy"]):
     predictions = np.argmax(logits, axis=-1)
     return metric.compute(predictions=predictions, references=labels)
 
-def process_data_bert(dataset, tokenizer):
-    def concatenate(sentences):
-        return "[CLS] " + " [SEP] ".join(sentences) + " [SEP]"
-
-    def get_strings(row):
-        return filter(lambda value: isinstance(value, str), row.values())
-
-    def concatenate_sentences(dataset):
-        return { "prompt": concatenate(get_strings(dataset)), "label": dataset["label"] }
-
-    def tokenize_function(batch):
-        return tokenizer(batch["prompt"], padding="max_length", truncation=True)
-
-    return dataset.map(concatenate_sentences).map(tokenize_function, batched=True)
 
 def run_adam(args: TrainingArguments, model, train_set, eval_set):
     trainer = Trainer(
@@ -147,20 +216,6 @@ class CustomArguments:
     """Arguments for the script. If you'd like to change the training
     configuration, use TrainingArguments."""
 
-    train_test_split_shuffle_seed: int = dataclasses.field(
-        default=42,
-        metadata={ "help": """Seed for the train_test_split shuffle.""" }
-    )
-    train_sample_seed: int = dataclasses.field(
-        default=42,
-        metadata={ "help": """Seed for sampling 'train_set_size' examples from
-                           the training set.""" }
-    )
-    train_set_size: int = dataclasses.field(
-        default=64,
-        metadata={ "help": """Number of examples used to represent each
-                           class in the few-shot learning regime.""" }
-    )
     model_name: str = dataclasses.field(
         default="bert-base-uncased", 
         metadata={ "help": """Name of the model, or path as found in the
@@ -178,10 +233,29 @@ class CustomArguments:
                            be run.  To list all available methods, use
                            --list-methods.""" }
     )
+    train_test_split_shuffle_seed: int = dataclasses.field(
+        default=42,
+        metadata={ "help": """Seed for the train_test_split shuffle.""" }
+    )
+    train_sample_seed: int = dataclasses.field(
+        default=42,
+        metadata={ "help": """Seed for sampling 'train_set_size' examples from
+                           the training set.""" }
+    )
+    train_set_size: int = dataclasses.field(
+        default=64,
+        metadata={ "help": """Number of examples used to represent each
+                           class in the few-shot learning regime.""" }
+    )
     use_wandb: bool = dataclasses.field(
         default=False, 
         metadata={ "help": """Whether to use wandb for logging. If True, make
                            you are logged in.""" }
+    )
+    cache_dir: Optional[str] = dataclasses.field(
+        default="data",
+        metadata={ "help": """Path to the dataset cache directory. If None, no
+                           caching will be used.""" }
     )
 
 @dataclasses.dataclass
@@ -234,11 +308,21 @@ def run(args: CustomArguments, training_args: TrainingArgumentsCustomDefaults):
     tokenizer = AutoTokenizer.from_pretrained(args.model_name)
     model = AutoModelForSequenceClassification.from_pretrained(args.model_name)
 
-    # load the data
-    data = get_data(args.train_test_split_shuffle_seed, args.tasks or fs_glue_tasks)
+    # load and process the data
+    if args.use_wandb:
+        wandb.init(
+            project="ifh", 
+            name=f"{training_args.output_dir}/pre_processing", 
+            tags=[training_args.output_dir, args.model_name, "pre_processing"],
+            reinit=True
+        )
 
-    # process the data
-    data = { task: process_data_bert(dataset, tokenizer) for task, dataset in data.items() }
+    data, metadata = get_data(args.train_test_split_shuffle_seed, args.tasks or fs_glue_tasks, args.cache_dir)
+    data, metadata = process_data(data, metadata, tokenizer, args.cache_dir)
+
+    if args.use_wandb:
+        wandb.finish()
+
     top_level_output_dir = training_args.output_dir
 
     for method in set(args.methods + ["baseline"]):
@@ -249,8 +333,12 @@ def run(args: CustomArguments, training_args: TrainingArgumentsCustomDefaults):
             eval_set = dataset["validation"]
 
             if args.use_wandb:
-                wandb.init(project="ifh", name=training_args.output_dir, reinit=True)
-
+                wandb.init(
+                    project="ifh", 
+                    name=training_args.output_dir, 
+                    tags=[top_level_output_dir, args.model_name, method, task],
+                    reinit=True
+                )
             results = Methods.run(method, training_args, model, train_set, eval_set)
 
             if args.use_wandb:
