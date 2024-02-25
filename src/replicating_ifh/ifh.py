@@ -190,6 +190,10 @@ def run_baseline(args: TrainingArguments, _, train_set, eval_set):
     if not args.report_to:
         os.mkdir(f"{args.output_dir}")
         open(f"{args.output_dir}/evaluation.json", "w").write(json.dumps(evaluation))
+    if args.use_wandb:
+        import wandb
+        wandb.log(evaluation)
+        wandb.finish()
 
     return evaluation
 
@@ -201,7 +205,7 @@ class Methods():
     }
 
     @staticmethod
-    def run(method: str, *args: Any, **kwargs: Any):
+    def run(method: str, *args: Any, **kwargs: Any) -> dict:
         if method not in Methods._method_run_map:
             raise ValueError(f"Method {method} not found in {Methods._method_run_map.keys()}")
 
@@ -330,7 +334,7 @@ def run(args: CustomArguments, training_args: TrainingArgumentsCustomDefaults):
             training_args.output_dir = f"{top_level_output_dir}/{args.model_name}/{method}/{task}" 
 
             train_set = dataset["train"].shuffle(seed=args.train_sample_seed).select(range(args.train_set_size))
-            eval_set = dataset["validation"]
+            eval_set = dataset["validation"].select(min(len(dataset["validation"]), range(2000)))
 
             if args.use_wandb:
                 wandb.init(
@@ -339,11 +343,8 @@ def run(args: CustomArguments, training_args: TrainingArgumentsCustomDefaults):
                     tags=[top_level_output_dir, args.model_name, method, task],
                     reinit=True
                 )
-            results = Methods.run(method, training_args, model, train_set, eval_set)
 
-            if args.use_wandb:
-                wandb.log(results)
-                wandb.finish()
+            Methods.run(method, training_args, model, train_set, eval_set)
 
 if __name__=="__main__":
     parser = HfArgumentParser([CustomArguments, TrainingArgumentsCustomDefaults])
