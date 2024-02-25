@@ -9,7 +9,6 @@ from peft import get_peft_model, LoraConfig, TaskType
 
 # external
 from tqdm import tqdm
-import wandb
 
 # built-in
 import numpy as np
@@ -18,6 +17,7 @@ import json
 import dataclasses
 from enum import Enum
 from typing import Any, Optional
+import warnings
 
 glue_tasks = [ "cola", "mrpc", "qqp", "mnli", "qnli", "rte" , "sst2" ]
 superglue_tasks = [ "boolq", "cb", "copa" , "wic" ]
@@ -217,6 +217,8 @@ class TrainingArgumentsCustomDefaults(TrainingArguments):
 
 def run(args: CustomArguments, training_args: TrainingArgumentsCustomDefaults):
     if args.use_wandb:
+        import wandb
+
         os.environ["WANDB_PROJECT"] = "ifh"
         os.environ["WANDB_LOG_MODEL"] = "false"
         os.environ["WANDB_WATCH"] = "false"
