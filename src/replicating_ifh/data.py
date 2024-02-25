@@ -1,207 +1,177 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 
-import glob
+# huggingface
+from transformers import PreTrainedTokenizerBase, AutoTokenizer
+from datasets import load_dataset, DatasetDict
+
+# external
+from tqdm import tqdm
+import typer
+
+# built-in
 import os
-from enum import Enum
-import subprocess
+import json
+from typing import Optional
+import warnings
+from transformers import AutoTokenizer
+from transformers import AutoTokenizer
 
-import pandas as pd
-from datasets import load_dataset_builder
+glue_tasks = [ "cola", "mrpc", "qqp", "mnli", "qnli", "rte" , "sst2" ]
+superglue_tasks = [ "boolq", "cb", "copa" , "wic" ]
+fs_glue_tasks = glue_tasks + superglue_tasks
 
-from fine_tuners import AvailableFineTuner
+def download(seed: int, tasks: list[str] = fs_glue_tasks, cache_dir: Optional[str] = None):
+    """
+    Download the FSGLUE data. If the a cache directory is given, the data
+    will be retrieved from the cache if it exists. Otherwise, the data will be
+    loaded from the huggingface hub. The downloaded data is then cached if the
+    cache_dir is given.
+    """
+    def read_cache(cache_dir, seed, tasks):
+        if cache_dir and os.path.exists(f"{cache_dir}/metadata.json"):
+            print(f"Using cached data from {cache_dir}. Set cache_dir=None to re-download the data.")
+            metadata: dict = json.load(open(f"{cache_dir}/metadata.json"))
 
-fs_glue_location = os.path.join(os.getcwd(), "data/fs_glue")
-fs_glue_default_location = os.path.join(fs_glue_location, "default")
+            if metadata["train_test_split_shuffle_seed"] == seed:
+                for task in tasks:
+                    if os.path.exists(f"{cache_dir}/{task}"):
+                        fs_glue[task] = DatasetDict.load_from_disk(f"{cache_dir}/{task}")
 
-glue_task_names = [ "cola", "mrpc", "qqp", "mnli", "qnli", "rte" , "sst2" ]
-superglue_task_names = [ "boolq", "cb", "copa" , "wic" ]
-fs_glue_task_names = glue_task_names + superglue_task_names
+                return fs_glue, metadata
+            else:            
+                warnings.warn(f"Found cached data, but the seed does not match the current seed. Re-downloading the data.")
+        else:
+            if cache_dir:
+                warnings.warn(f"Cache directory {cache_dir} not found. Re-downloading the data.")
 
-class DatasetOptions(str, Enum):
-    none = "none"
-    all = "all"
+    def write_cache(cache_dir, fs_glue: dict[str, DatasetDict], metadata: dict):
+        if cache_dir:
+            for task, dataset in fs_glue.items():
+                dataset.save_to_disk(f"{cache_dir}/{task}")
 
-class AvailableDataset(str, Enum):
-    fs_glue = "fs_glue"
-    jfmd = "jfmd"
+            json.dump(metadata, open(f"{cache_dir}/metadata.json", "w"))
+            warnings.warn(f"Saved data to {cache_dir}")
 
-def _download_fs_glue():
-    if os.path.isdir(fs_glue_default_location):
-        print(f"Datasets already exist in {fs_glue_default_location}.")
-        return
+    fs_glue: dict[ str, DatasetDict ] = {}
 
-    print(f"Downloading datasets into {fs_glue_default_location}...")
+    if (cache := read_cache(cache_dir, seed, tasks)):
+        fs_glue, metadata = cache
+        missing_tasks = set(tasks) - set(fs_glue.keys())
 
-    for task in glue_task_names:
-        builder = load_dataset_builder("glue", task)
-        builder.download_and_prepare(
-                f"{fs_glue_default_location}/{task}", 
-                file_format="parquet"
+        if len(missing_tasks) == 0:
+            return fs_glue, metadata
+
+        print(f"Found cached data, but the following tasks are missing: {missing_tasks}. Re-downloading the data.")        
+        tasks = missing_tasks
+
+    for task in (pbar := tqdm(tasks, desc="Loading FSGLUE tasks")):
+        pbar.set_postfix(task=task)
+        split = DatasetDict()
+
+        try:
+            dataset = load_dataset("glue", task)
+        except:
+            dataset = load_dataset("super_glue", task)
+
+        # mnli has two versions of the validation and test sets
+        # the matched versions do more closely resemble the train set
+        # while the mismatched versions are more supposed to be more challenging
+        if task == "mnli":
+            split["train"] = dataset["train"]
+            split["validation"] = dataset["validation_mismatched"]
+            split["test"] = dataset["test_mismatched"]
+        # some are not split by default
+        elif not isinstance(dataset, DatasetDict):
+            split: DatasetDict = dataset.train_test_split(
+                shuffle=True,
+                seed=seed
             )
+        # others are already split
+        else:
+            split = dataset
 
-    for task in superglue_task_names:
-        builder = load_dataset_builder(f"super_glue", task)
-        builder.download_and_prepare(
-                f"{fs_glue_default_location}/{task}", 
-                file_format="parquet"
-            )
+        fs_glue[task] = split
 
-    # remove lock files
-    for file in glob.glob(f"{fs_glue_default_location}/*.lock"):
-        os.remove(file)
+    metadata: dict = { "train_test_split_shuffle_seed": seed }
 
-    # rename files
-    for file in glob.glob(f"{fs_glue_default_location}/*/*.parquet"):
-        dirname = os.path.dirname(file)
-        new_file = ""
+    write_cache(cache_dir, seed, fs_glue, metadata)
 
-        if "train" in file:
-            new_file = os.path.join(dirname, "train.parquet")
-        if "test" in file:
-            new_file = os.path.join(dirname, "test.parquet")
-        if "validation" in file:
-            new_file = os.path.join(dirname, "validation.parquet")
+    return fs_glue, metadata
 
-        os.rename(file, new_file)
-
-    print (f"Done.")
-
-def _download_jfmd():
-    print(subprocess.call([ "bash", "jfmd.sh" ], cwd="data"))
-
-def _prepare_for_lmbff(tasks, n_samples=64, random_state=42, force=False):
+def process_data_bert(dataset, tokenizer):
     """
-    LMBFF expects a specific format for the datasets. This function will parse
-    the datasets. Instead of randomly sampling in the training phase, ADAPET
-    uses a fixed set of examples for each task. This means we have to take a
-    subset of the training data as training examples. 
+    Function to process the data for BERT-like models. This function
+    concatenates strings with the [SEP] token and tokenizes the data to prepare
+    them for SequenceClassification.
+    """
+    def concatenate(sentences):
+        return "[CLS] " + " [SEP] ".join(sentences) + " [SEP]"
+
+    def get_strings(row):
+        return filter(lambda value: isinstance(value, str), row.values())
+
+    def concatenate_sentences(dataset):
+        return { "prompt": concatenate(get_strings(dataset)), "label": dataset["label"] }
+
+    def tokenize_function(batch):
+        return tokenizer(batch["prompt"], padding="max_length", truncation=True)
+
+    return dataset.map(concatenate_sentences).map(tokenize_function, batched=True)
+
+def prepare(data: dict[str, DatasetDict], metadata: dict, tokenizer: PreTrainedTokenizerBase, cache_dir: Optional[str]):
+    """
+    Tokenize and cache the processed data. If cache_dir is given, the processed
+    data is attempted to be retrieved from the cache. Otherwise, it's processed
+    and then cached.
     """
 
-    try:
-        assert os.listdir(os.path.join("fine_tuners", "lmbff")) != []
-    except AssertionError or FileNotFoundError:
-        raise ValueError("LM-BFF repository not found.")
+    def read_cache(cache_dir: Optional[str], data: dict[str, DatasetDict], metadata: dict, tokenizer: PreTrainedTokenizerBase):
+        if cache_dir:
+            print(f"Using cached processed data from {cache_dir}. Set cache_dir=None to re-process the data.")
 
-    lmbff_location = os.path.join(fs_glue_location, "lmbff")
+            if "processed" in metadata and metadata["processed"]["model"] == str(tokenizer.name_or_path):
+                return data, metadata
+            else:
+                warnings.warn(f"Found cached data, but the model does not match the current model. Re-processing the data.")
 
-    if force:
-        import shutil
-        shutil.rmtree(lmbff_location)
+    def write_cache(cache_dir: Optional[str], data: dict[str, DatasetDict], metadata: dict):
+        if cache_dir:
+            for task, dataset in data.items():
+                dataset.save_to_disk(f"{cache_dir}/{task}")
 
-    try:
-        os.mkdir(lmbff_location)
-    except FileExistsError:
-        print(f"[setup:parse:lmbff] Directory '{lmbff_location}' already exists. If you'd like to re-run this function, please remove the directory first.")
-        return
+            json.dump(metadata, open(f"{cache_dir}/metadata.json", "w"))
+            print(f"Saved processed data to {cache_dir}")
 
-    for task_name, task in tasks.items():
-        output_dir = os.path.join(fs_glue_location, "lmbff", task_name)
-        os.mkdir(output_dir)
+    if (cache := read_cache(cache_dir, data, metadata, tokenizer)):
+        return cache
 
-        for split, data in task.items():
-            if "train" in split:
-                file_location = os.path.join(output_dir, "train.tsv")
-                subset = data.sample(n=n_samples, random_state=random_state)
-                subset.to_csv(file_location, sep="\t", index=False)
+    data = { task: process_data_bert(dataset, tokenizer) for task, dataset in data.items() }
+    metadata["processed"] = { "model": tokenizer.name_or_path }
 
-            if "test" in split:
-                file_location = os.path.join(output_dir, "test.tsv")
-                data.to_csv(file_location, sep="\t", index=False)
+    write_cache(cache_dir, data, metadata)
 
-            if "validation" in split:
-                file_location = os.path.join(output_dir, "dev.tsv")
-                data.to_csv(file_location, sep="\t", index=False)
+    return data, metadata
 
-def _prepare_for_adapet(tasks, random_state=42):
+def download_and_prepare(seed: int, tasks: list[str] = fs_glue_tasks, cache_dir: Optional[str] = "data", tokenizer: Optional[PreTrainedTokenizerBase] = None):
     """
-    ADAPET expects json format for the datasets. This includes the 'question',
-    'passage' 'index' and 'label' fields. 
+    Download and prepare the data for the given tasks. If a tokenizer is not
+    given, preparation is skipped. If cache_dir is not given, cache is not used.
     """
+    data, metadata = download(seed, tasks, cache_dir)
+
+    if tokenizer:
+        data, metadata = prepare(data, metadata, tokenizer, cache_dir)
+
+    return data, metadata
     
-    try:
-        assert os.listdir(os.path.join("fine_tuners", "adapet")) != []
-    except AssertionError or FileNotFoundError:
-        raise ValueError("ADAPET repository not found.")
+def download_and_prepare_cli(seed: int = 42, model_name: str = "bert-base-uncased", tasks: list[str] = fs_glue_tasks, output_dir: str = "data"):
+    """
+    Download and prepare the FSGLUE data for the given tasks. If a tokenizer
+    is not given, preparation is skipped. If cache_dir is not given, cache is
+    not used.
+    """
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    download_and_prepare(seed, tasks, output_dir, tokenizer)
 
-    adapet_location = os.path.join(fs_glue_location, "adapet")
-
-    try:
-        os.mkdir(adapet_location)
-    except FileExistsError:
-        print(f"[setup:parse:adapet] Directory '{adapet_location}' already exists. If you'd like to re-run this function, please remove the directory first.")
-        return
-
-    for task_name, task in tasks.items():
-        output_dir = os.path.join(fs_glue_location, "adapet", task_name)
-        os.mkdir(output_dir)
-
-        for split, data in task.items():
-            if "train" in split:
-                file_location = os.path.join(output_dir, "train.json")
-                subset.to_json(file_location, orient="records", lines=True)
-
-            if "validation" in split:
-                file_location = os.path.join(output_dir, "unlabeled.json")
-                unlabeled = data.drop(columns="label")
-                unlabeled.to_json(file_location, orient="records", lines=True)
-
-def _download(datasets: list[AvailableDataset]):
-    print("Downloading datasets...")
-    print(f"Datasets: {datasets}")
-
-    for dataset in datasets:
-        if dataset == AvailableDataset.jfmd:
-            _download_jfmd()
-        if dataset == AvailableDataset.fs_glue:
-            _download_fs_glue()
-
-def _prepare(fine_tuners: list[str], force=False):
-    print("Parsing datasets...") 
-    print(f"Fine-tuners: {fine_tuners}")
-    
-    if force:
-        print("Forcing re-parsing of datasets.")
-
-    fs_glue = {}
-
-    for task in fs_glue_task_names:
-        task_dir = os.path.join(fs_glue_default_location, task)
-        files  = os.listdir(task_dir)
-        fs_glue[task] = {}
-
-        for file in filter(lambda x: x.endswith(".parquet"), files):
-            fs_glue[task][file.split('.')[0]] = pd.read_parquet(os.path.join(task_dir, file))
-              
-    for fine_tuner in fine_tuners:
-        if fine_tuner == AvailableFineTuner.lmbff:
-            _prepare_for_lmbff(fs_glue, force=force)
-        if fine_tuner == AvailableFineTuner.adapet:
-            _prepare_for_adapet(fs_glue)
-
-def download_and_prepare(
-    dataset: DatasetOptions | AvailableDataset,
-    fine_tuner: AvailableFineTuner,
-    random_state: int=42,
-    force: bool=False
-):
-    datasets = [ dataset ]
-    fine_tuners = [ fine_tuner ]
-
-    if dataset == DatasetOptions.none:
-        datasets = [ ]
-    if fine_tuner == AvailableFineTuner.none:
-        fine_tuners = [ ]
-
-    if dataset == DatasetOptions.all:
-        datasets = list(AvailableDataset)
-    if fine_tuner == AvailableFineTuner.all:
-        fine_tuners = list(AvailableFineTuner)
-
-    _download(datasets)
-    _prepare(fine_tuners, force=force) 
- 
-    print("Done.")
-        
 if __name__ == "__main__":
-    import typer
-    typer.run(download_and_prepare)
+    typer.run(download_and_prepare_cli)
