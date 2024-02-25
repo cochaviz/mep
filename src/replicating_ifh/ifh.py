@@ -124,7 +124,7 @@ def run_baseline(args: TrainingArguments, _, train_set, eval_set):
 
     return evaluation
 
-class MethodRunner():
+class Methods():
     methods = {
         "lora" : run_lora,
         "adam" : run_adam,
@@ -133,14 +133,14 @@ class MethodRunner():
 
     @staticmethod
     def run(method: str, *args: Any, **kwargs: Any):
-        if method not in MethodRunner.methods:
-            raise ValueError(f"Method {method} not found in {MethodRunner.methods.keys()}")
+        if method not in Methods.methods:
+            raise ValueError(f"Method {method} not found in {Methods.methods.keys()}")
 
-        return MethodRunner.methods[method](*args, **kwargs)
+        return Methods.methods[method](*args, **kwargs)
 
     @staticmethod
-    def available_methods():
-        return list(MethodRunner.methods.keys())
+    def list_available():
+        return list(Methods.methods.keys())
 
 @dataclasses.dataclass
 class CustomArguments:
@@ -216,7 +216,7 @@ def run(args: CustomArguments, training_args: TrainingArgumentsCustomDefaults):
         training_args.report_to = ["wandb"] 
 
     # populate list with all methods
-    args.methods = args.methods or MethodRunner.available_methods()
+    args.methods = args.methods or Methods.list_available()
 
     # load the tokenizer and model
     tokenizer = AutoTokenizer.from_pretrained(args.model_name)
@@ -237,7 +237,7 @@ def run(args: CustomArguments, training_args: TrainingArgumentsCustomDefaults):
             eval_set = dataset["validation"]
 
             wandb.init(project="ifh", name=training_args.output_dir, reinit=True)
-            results = MethodRunner.run(method, training_args, model, train_set, eval_set)
+            results = Methods.run(method, training_args, model, train_set, eval_set)
             wandb.log(results)
             wandb.finish()
 
@@ -253,7 +253,7 @@ if __name__=="__main__":
         exit(0)
 
     if args[-1].list_methods:
-        print(MethodRunner.available_methods())
+        print(Methods.list_available())
         exit(0)
 
     run(args)
