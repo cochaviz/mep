@@ -125,7 +125,7 @@ def run_baseline(args: TrainingArguments, _, train_set, eval_set):
     return evaluation
 
 class Methods():
-    methods = {
+    _method_run_map = {
         "lora" : run_lora,
         "adam" : run_adam,
         "baseline" : run_baseline
@@ -133,14 +133,14 @@ class Methods():
 
     @staticmethod
     def run(method: str, *args: Any, **kwargs: Any):
-        if method not in Methods.methods:
-            raise ValueError(f"Method {method} not found in {Methods.methods.keys()}")
+        if method not in Methods._method_run_map:
+            raise ValueError(f"Method {method} not found in {Methods._method_run_map.keys()}")
 
-        return Methods.methods[method](*args, **kwargs)
+        return Methods._method_run_map[method](*args, **kwargs)
 
     @staticmethod
     def list_available():
-        return list(Methods.methods.keys())
+        return list(Methods._method_run_map.keys())
 
 @dataclasses.dataclass
 class CustomArguments:
@@ -150,6 +150,16 @@ class CustomArguments:
     train_test_split_shuffle_seed: int = dataclasses.field(
         default=42,
         metadata={ "help": """Seed for the train_test_split shuffle.""" }
+    )
+    train_sample_seed: int = dataclasses.field(
+        default=42,
+        metadata={ "help": """Seed for sampling 'train_set_size' examples from
+                           the training set.""" }
+    )
+    train_set_size: int = dataclasses.field(
+        default=64,
+        metadata={ "help": """Number of examples used to represent each
+                           class in the few-shot learning regime.""" }
     )
     model_name: str = dataclasses.field(
         default="bert-base-uncased", 
@@ -223,7 +233,7 @@ def run(args: CustomArguments, training_args: TrainingArgumentsCustomDefaults):
     model = AutoModelForSequenceClassification.from_pretrained(args.model_name)
 
     # load the data
-    data = get_data(training_args.seed, args.tasks or fs_glue_tasks)
+    data = get_data(args.train_test_split_shuffle_seed, args.tasks or fs_glue_tasks)
 
     # process the data
     data = { task: process_data_bert(dataset, tokenizer) for task, dataset in data.items() }
@@ -233,13 +243,17 @@ def run(args: CustomArguments, training_args: TrainingArgumentsCustomDefaults):
         for task, dataset in data.items():
             training_args.output_dir = f"{top_level_output_dir}/{args.model_name}/{method}/{task}" 
 
-            train_set = dataset["train"].select(range(64))
+            train_set = dataset["train"].shuffle(seed=args.train_sample_seed).select(range(args.train_set_size))
             eval_set = dataset["validation"]
 
-            wandb.init(project="ifh", name=training_args.output_dir, reinit=True)
+            if args.use_wandb:
+                wandb.init(project="ifh", name=training_args.output_dir, reinit=True)
+
             results = Methods.run(method, training_args, model, train_set, eval_set)
-            wandb.log(results)
-            wandb.finish()
+
+            if args.use_wandb:
+                wandb.log(results)
+                wandb.finish()
 
 if __name__=="__main__":
     parser = HfArgumentParser([CustomArguments, TrainingArgumentsCustomDefaults])
