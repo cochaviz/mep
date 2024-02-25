@@ -114,7 +114,7 @@ def process_data(data: dict[str, DatasetDict], metadata: Optional[dict], tokeniz
         if cache_dir and metadata:
             print(f"Using cached processed data from {cache_dir}. Set cache_dir=None to re-process the data.")
 
-            if "processed" in metadata and metadata["processed"]["model"] == tokenizer.name_or_path:
+            if "processed" in metadata and metadata["processed"]["model"] == str(tokenizer.name_or_path):
                 return data, metadata
             else:
                 warnings.warn(f"Found cached data, but the model does not match the current model. Re-processing the data.")
