@@ -29,7 +29,7 @@ def download(seed: int, tasks: list[str] = fs_glue_tasks, cache_dir: Optional[st
     """
     def read_cache(cache_dir, seed, tasks):
         if cache_dir and os.path.exists(f"{cache_dir}/metadata.json"):
-            print(f"Using cached data from {cache_dir}. Set cache_dir=None to re-download the data.")
+            print(f"Using cached data from './{cache_dir}'. (Found following tasks: {os.listdir(cache_dir)})")
             metadata: dict = json.load(open(f"{cache_dir}/metadata.json"))
 
             if metadata["train_test_split_shuffle_seed"] == seed:
@@ -42,7 +42,7 @@ def download(seed: int, tasks: list[str] = fs_glue_tasks, cache_dir: Optional[st
                 warnings.warn(f"Found cached data, but the seed does not match the current seed. Re-downloading the data.")
         else:
             if cache_dir:
-                warnings.warn(f"Cache directory {cache_dir} not found. Re-downloading the data.")
+                warnings.warn(f"Directory {cache_dir} not found. Re-downloading the data.")
 
     def write_cache(cache_dir, fs_glue: dict[str, DatasetDict], metadata: dict):
         if cache_dir:
@@ -61,7 +61,7 @@ def download(seed: int, tasks: list[str] = fs_glue_tasks, cache_dir: Optional[st
         if len(missing_tasks) == 0:
             return fs_glue, metadata
 
-        print(f"Found cached data, but the following tasks are missing: {missing_tasks}. Re-downloading the data.")        
+        warnings.warn(f"Found cached data, but the following tasks are missing: {missing_tasks}. Re-downloading the data.")        
         tasks = missing_tasks
 
     for task in (pbar := tqdm(tasks, desc="Loading FSGLUE tasks")):
@@ -127,9 +127,8 @@ def prepare(data: dict[str, DatasetDict], metadata: dict, tokenizer: PreTrainedT
 
     def read_cache(cache_dir: Optional[str], data: dict[str, DatasetDict], metadata: dict, tokenizer: PreTrainedTokenizerBase):
         if cache_dir:
-            print(f"Using cached processed data from {cache_dir}. Set cache_dir=None to re-process the data.")
-
             if "processed" in metadata and metadata["processed"]["model"] == str(tokenizer.name_or_path):
+                print(f"Using cached processed data from './{cache_dir}'. (Found the following metadata: {metadata["processed"]})")
                 return data, metadata
             else:
                 warnings.warn(f"Found cached data, but the model does not match the current model. Re-processing the data.")

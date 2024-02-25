@@ -5,9 +5,16 @@ import time
 from transformers import Trainer, TrainingArguments, AutoTokenizer, AutoModelForSequenceClassification, HfArgumentParser
 from evaluate import combine
 from peft import get_peft_model, LoraConfig, TaskType
+from datasets import Dataset
 
 # external
 from tqdm import tqdm
+from pyarrow import Table
+import pandas as pd
+try:
+    import wandb
+except ImportError:
+    warnings.warn("wandb not installed. Run `pip install wandb` to use wandb.")
 
 # internal
 from data import download_and_prepare, fs_glue_tasks
@@ -18,6 +25,7 @@ import os
 import json
 import dataclasses
 from typing import Any, Optional
+import warnings
 
 def baseline_majority(train_set, eval_set, metrics=["accuracy"]):
     train_set.with_format("numpy")
@@ -68,13 +76,14 @@ def run_lora(args: TrainingArguments, model, train_set, eval_set):
 def run_baseline(args: TrainingArguments, _, train_set, eval_set):
     evaluation = baseline_majority(train_set, eval_set)  
 
-    if not args.report_to or len(args.report_to) == 0:
+    if not args.report_to or len(args.report_to) == 0 or "none" in args.report_to or "all" in args.report_to:
         os.mkdir(f"{args.output_dir}")
         open(f"{args.output_dir}/evaluation.json", "w").write(json.dumps(evaluation))
-    elif args.report_to[0] == "wandb":
-        import wandb
-        wandb.log(evaluation)
-        wandb.finish()
+    elif "wandb" in args.report_to or "all" in args.report_to:
+        # only run it if initialized
+        if wandb.run is not None:
+            wandb.log(evaluation)
+            wandb.finish()
 
     return evaluation
 
@@ -95,6 +104,15 @@ class Methods():
     @staticmethod
     def list_available():
         return list(Methods._method_run_map.keys())
+
+def extract_few_shot(dataset: pd.DataFrame(), num_samples: int, sample_seed: int) -> pd.DataFrame:
+    few_shot = pd.DataFrame()
+    for label in dataset["label"].unique():
+        few_shot = pd.concat([
+            few_shot,
+            dataset[dataset["label"] == label].sample(num_samples, random_state=sample_seed)
+        ])
+    return few_shot
 
 @dataclasses.dataclass
 class CustomArguments:
@@ -122,12 +140,12 @@ class CustomArguments:
         default=42,
         metadata={ "help": """Seed for the train_test_split shuffle.""" }
     )
-    train_sample_seed: int = dataclasses.field(
+    few_shot_sample_seed: int = dataclasses.field(
         default=42,
         metadata={ "help": """Seed for sampling 'train_set_size' examples from
                            the training set.""" }
     )
-    train_set_size: int = dataclasses.field(
+    few_shot_samples: int = dataclasses.field(
         default=64,
         metadata={ "help": """Number of examples used to represent each
                            class in the few-shot learning regime.""" }
@@ -137,10 +155,11 @@ class CustomArguments:
         metadata={ "help": """Whether to use wandb for logging. If True, make
                            you are logged in.""" }
     )
-    cache_dir: Optional[str] = dataclasses.field(
+    data_dir: Optional[str] = dataclasses.field(
         default="data",
-        metadata={ "help": """Path to the dataset cache directory. If None, no
-                           caching will be used.""" }
+        metadata={ "help": """Path to the dataset directory. If None, no caching
+                           will be used and data will be downloaded on every
+                           run.""" }
     )
 
 @dataclasses.dataclass
@@ -179,8 +198,6 @@ def run(
         training_args: TrainingArgumentsCustomDefaults,
     ):
     if args.use_wandb: 
-        import wandb
-
         os.environ["WANDB_PROJECT"] = "ifh"
         os.environ["WANDB_LOG_MODEL"] = "false"
         os.environ["WANDB_WATCH"] = "false"
@@ -205,9 +222,12 @@ def run(
             tags=[training_args.output_dir, args.model_name, "pre_processing"],
             reinit=True
         )
-
-    data, _ = download_and_prepare(args.train_test_split_shuffle_seed, args.tasks or fs_glue_tasks, args.cache_dir, tokenizer)
-
+    data, _ = download_and_prepare(
+        args.train_test_split_shuffle_seed, 
+        args.tasks or fs_glue_tasks, 
+        args.data_dir, 
+        tokenizer
+    )
     if args.use_wandb:
         wandb.finish()
 
@@ -217,7 +237,19 @@ def run(
         for task, dataset in data.items():
             training_args.output_dir = f"{top_level_output_dir}/{args.model_name}/{method}/{task}" 
 
-            train_set = dataset["train"].shuffle(seed=args.train_sample_seed).select(range(args.train_set_size))
+            # select subset of training data and represent
+            # each label by train_set_size examples
+            dataset["train"].set_format("pandas")
+            train_set = Dataset(Table.from_pandas(extract_few_shot(
+                dataset["train"], 
+                args.few_shot_samples, 
+                args.few_shot_sample_seed
+            )))
+            dataset["train"].reset_format()
+ 
+            # HACK: select subset of validation data because
+            # otherwise it takes too long. Should be removed
+            # for final run.
             eval_set = dataset["validation"].select(
                 range(min(
                     len(dataset["validation"]), 
