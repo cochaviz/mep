@@ -128,7 +128,7 @@ def prepare(data: dict[str, DatasetDict], metadata: dict, tokenizer: PreTrainedT
     def read_cache(cache_dir: Optional[str], data: dict[str, DatasetDict], metadata: dict, tokenizer: PreTrainedTokenizerBase):
         if cache_dir:
             if "processed" in metadata and metadata["processed"]["model"] == str(tokenizer.name_or_path):
-                print(f"Using cached processed data from './{cache_dir}'. (Found the following metadata: {metadata["processed"]})")
+                print(f"Using cached processed data from './{cache_dir}'. (Found the following metadata: {metadata['processed']})")
                 return data, metadata
             else:
                 warnings.warn(f"Found cached data, but the model does not match the current model. Re-processing the data.")
