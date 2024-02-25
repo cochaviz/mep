@@ -229,7 +229,7 @@ def run(args: CustomArguments, training_args: TrainingArgumentsCustomDefaults):
     data = { task: process_data_bert(dataset, tokenizer) for task, dataset in data.items() }
     top_level_output_dir = training_args.output_dir
 
-    for method in args.methods + ["baseline"]:
+    for method in set(args.methods + ["baseline"]):
         for task, dataset in data.items():
             training_args.output_dir = f"{top_level_output_dir}/{args.model_name}/{method}/{task}" 
 
