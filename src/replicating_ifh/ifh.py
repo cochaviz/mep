@@ -196,9 +196,9 @@ def run(
 
 if __name__=="__main__":
     parser = HfArgumentParser([CustomArguments, TrainingArgumentsCustomDefaults])
-
     parser.add_argument("--list-tasks", action="store_true", help="List all available tasks.")
     parser.add_argument("--list-methods", action="store_true", help="List all avaible methods.")
+
     args = parser.parse_args_into_dataclasses()
 
     if args[-1].list_tasks:
