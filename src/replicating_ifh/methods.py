@@ -90,14 +90,7 @@ class Methods():
         if method not in Methods._method_run_map:
             raise ValueError(f"Method {method} not found in {Methods._method_run_map.keys()}")
 
-        try:
-            result = Methods._method_run_map[method](*args, **kwargs)
-        except Exception as e:
-            warnings.warn(f"Error running method {method}: {e}")
-            wandb.finish(exit_code=1)
-            result = None
-
-        return result
+        return Methods._method_run_map[method](*args, **kwargs)
 
     @staticmethod
     def list_available():
