@@ -151,7 +151,7 @@ def run(
 
     top_level_output_dir = training_args.output_dir
 
-    for method in set(args.methods + ["baseline"]):
+    for method in set(args.methods):
         for task, dataset in data.items():
             training_args.output_dir = f"{top_level_output_dir}/{args.model_name}/{method}/{task}" 
 
@@ -183,7 +183,16 @@ def run(
                     reinit=True
                 )
 
-            Methods.run(method, training_args, model, train_set, eval_set)
+            try:
+                Methods.run(method, training_args, model, train_set, eval_set)
+            except Exception as e:
+                warnings.warn(f"Error running method {method}: {e}")
+
+                if args.use_wandb:
+                    wandb.finish(exit_code=1)
+            
+            if args.use_wandb:
+                wandb.finish()
 
 if __name__=="__main__":
     parser = HfArgumentParser([CustomArguments, TrainingArgumentsCustomDefaults])
