@@ -20,7 +20,7 @@ glue_tasks = [ "cola", "mrpc", "qqp", "mnli", "qnli", "rte" , "sst2" ]
 superglue_tasks = [ "boolq", "cb", "copa" , "wic" ]
 fs_glue_tasks = glue_tasks + superglue_tasks
 
-def download(seed: int, tasks: list[str] = fs_glue_tasks, cache_dir: Optional[str] = None):
+def download(seed: int, tasks: Optional[list[str]] = None, cache_dir: Optional[str] = None):
     """
     Download the FSGLUE data. If the a cache directory is given, the data
     will be retrieved from the cache if it exists. Otherwise, the data will be
@@ -53,6 +53,7 @@ def download(seed: int, tasks: list[str] = fs_glue_tasks, cache_dir: Optional[st
             warnings.warn(f"Saved data to {cache_dir}")
 
     fs_glue: dict[ str, DatasetDict ] = {}
+    tasks = tasks or fs_glue_tasks
 
     if (cache := read_cache(cache_dir, seed, tasks)):
         fs_glue, metadata = cache
@@ -94,7 +95,7 @@ def download(seed: int, tasks: list[str] = fs_glue_tasks, cache_dir: Optional[st
 
     metadata: dict = { "train_test_split_shuffle_seed": seed }
 
-    write_cache(cache_dir, seed, fs_glue, metadata)
+    write_cache(cache_dir, fs_glue, metadata)
 
     return fs_glue, metadata
 

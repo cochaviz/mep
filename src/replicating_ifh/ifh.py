@@ -2,13 +2,10 @@
 
 # huggingface
 import time
-from transformers import Trainer, TrainingArguments, AutoTokenizer, AutoModelForSequenceClassification, HfArgumentParser
-from evaluate import combine
-from peft import get_peft_model, LoraConfig, TaskType
+from transformers import TrainingArguments, AutoTokenizer, AutoModelForSequenceClassification, HfArgumentParser
 from datasets import Dataset
 
 # external
-from tqdm import tqdm
 from pyarrow import Table
 import pandas as pd
 try:
@@ -18,92 +15,13 @@ except ImportError:
 
 # internal
 from data import download_and_prepare, fs_glue_tasks
+from methods import Methods
 
 # built-in
-import numpy as np
 import os
-import json
 import dataclasses
-from typing import Any, Optional
+from typing import Optional
 import warnings
-
-def baseline_majority(train_set, eval_set, metrics=["accuracy"]):
-    train_set.with_format("numpy")
-
-    # get majority class
-    majority_class_index = np.argmax(np.bincount(train_set["label"]))
-    majority_class = train_set["label"][majority_class_index]
-
-    train_set.reset_format()
-
-    metric = combine(metrics)
-    return metric.compute(
-        predictions=[majority_class] * len(eval_set["label"]), 
-        references=eval_set["label"])
-
-def compute_metrics(eval_pred, metrics=["accuracy"]):
-    metric = combine(metrics)
-    logits, labels = eval_pred
-    predictions = np.argmax(logits, axis=-1)
-    return metric.compute(predictions=predictions, references=labels)
-
-
-def run_adam(args: TrainingArguments, model, train_set, eval_set):
-    trainer = Trainer(
-        model=model,
-        args=args,
-        train_dataset=train_set,
-        eval_dataset=eval_set,
-        compute_metrics=compute_metrics
-    )
-    return trainer.train()
-
-def run_lora(args: TrainingArguments, model, train_set, eval_set):
-    config = LoraConfig(
-        task_type= TaskType.SEQ_CLS, 
-        lora_alpha=32, 
-        lora_dropout=0.1
-    )
-    trainer = Trainer(
-        model= get_peft_model(model, config),
-        args=args,
-        train_dataset=train_set,
-        eval_dataset=eval_set,
-        compute_metrics=compute_metrics
-    )
-    return trainer.train()
-
-def run_baseline(args: TrainingArguments, _, train_set, eval_set):
-    evaluation = baseline_majority(train_set, eval_set)  
-
-    if not args.report_to or len(args.report_to) == 0 or "none" in args.report_to or "all" in args.report_to:
-        os.mkdir(f"{args.output_dir}")
-        open(f"{args.output_dir}/evaluation.json", "w").write(json.dumps(evaluation))
-    elif "wandb" in args.report_to or "all" in args.report_to:
-        # only run it if initialized
-        if wandb.run is not None:
-            wandb.log(evaluation)
-            wandb.finish()
-
-    return evaluation
-
-class Methods():
-    _method_run_map = {
-        "lora" : run_lora,
-        "adam" : run_adam,
-        "baseline" : run_baseline
-    }
-
-    @staticmethod
-    def run(method: str, *args: Any, **kwargs: Any) -> dict:
-        if method not in Methods._method_run_map:
-            raise ValueError(f"Method {method} not found in {Methods._method_run_map.keys()}")
-
-        return Methods._method_run_map[method](*args, **kwargs)
-
-    @staticmethod
-    def list_available():
-        return list(Methods._method_run_map.keys())
 
 def extract_few_shot(dataset: pd.DataFrame(), num_samples: int, sample_seed: int) -> pd.DataFrame:
     few_shot = pd.DataFrame()
@@ -224,7 +142,7 @@ def run(
         )
     data, _ = download_and_prepare(
         args.train_test_split_shuffle_seed, 
-        args.tasks or fs_glue_tasks, 
+        args.tasks,
         args.data_dir, 
         tokenizer
     )
