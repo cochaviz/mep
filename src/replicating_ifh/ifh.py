@@ -25,12 +25,15 @@ import warnings
 
 def extract_few_shot(dataset: pd.DataFrame(), num_samples: int, sample_seed: int) -> pd.DataFrame:
     few_shot = pd.DataFrame()
-    for label in dataset["label"].unique():
+    labels = dataset["label"].unique()
+
+    for label in labels:
         few_shot = pd.concat([
             few_shot,
             dataset[dataset["label"] == label].sample(num_samples, random_state=sample_seed)
         ])
-    return few_shot
+
+    return few_shot, len(labels)
 
 @dataclasses.dataclass
 class CustomArguments:
@@ -129,7 +132,6 @@ def run(
 
     # load the tokenizer and model
     tokenizer = AutoTokenizer.from_pretrained(args.model_name)
-    model = AutoModelForSequenceClassification.from_pretrained(args.model_name)
 
     # load and process the data
     if args.use_wandb:
@@ -158,13 +160,15 @@ def run(
             # select subset of training data and represent
             # each label by train_set_size examples
             dataset["train"].set_format("pandas")
-            train_set = Dataset(Table.from_pandas(extract_few_shot(
+            few_shot_set, num_labels = extract_few_shot(
                 dataset["train"], 
                 args.few_shot_samples, 
                 args.few_shot_sample_seed
-            )))
+            )
+            train_set = Dataset(Table.from_pandas(few_shot_set))
             dataset["train"].reset_format()
- 
+
+
             # HACK: select subset of validation data because
             # otherwise it takes too long. Should be removed
             # for final run.
@@ -183,6 +187,12 @@ def run(
                     reinit=True
                 )
 
+            # since number of labels can change between tasks,
+            # we need to re-instantiate the model for each task
+            model = AutoModelForSequenceClassification.from_pretrained(
+                args.model_name, num_labels=num_labels
+            )
+
             try:
                 Methods.run(method, training_args, model, train_set, eval_set)
             except Exception as e:
@@ -193,6 +203,9 @@ def run(
             
             if args.use_wandb:
                 wandb.finish()
+
+            # explicitly remove old model
+            del model
 
 if __name__=="__main__":
     parser = HfArgumentParser([CustomArguments, TrainingArgumentsCustomDefaults])

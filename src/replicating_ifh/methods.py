@@ -66,15 +66,14 @@ def _run_lora(args: TrainingArguments, model, train_set, eval_set):
 
 def _run_baseline(args: TrainingArguments, _, train_set, eval_set):
     evaluation = baseline_majority(train_set, eval_set)  
+    all = "all" in args.report_to
 
-    if not args.report_to or len(args.report_to) == 0 or "none" in args.report_to or "all" in args.report_to:
+    if all:
         os.mkdir(f"{args.output_dir}")
         open(f"{args.output_dir}/evaluation.json", "w").write(json.dumps(evaluation))
-    elif "wandb" in args.report_to or "all" in args.report_to:
-        # only run it if initialized
-        if wandb.run is not None:
-            wandb.log(evaluation)
-            wandb.finish()
+    elif "wandb" in args.report_to or all:
+        wandb.log(evaluation)
+        wandb.finish()
 
     return evaluation
 
