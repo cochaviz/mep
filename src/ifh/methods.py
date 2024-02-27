@@ -66,14 +66,21 @@ def _run_lora(args: TrainingArguments, model, train_set, eval_set):
 
 def _run_baseline(args: TrainingArguments, _, train_set, eval_set):
     evaluation = baseline_majority(train_set, eval_set)  
-    all = "all" in args.report_to
+    summary = {}
+
+    all = "all" in args.report_to or not args.report_to
+    print(f"all: {all}, args.report_to: {args.report_to}")
 
     if all:
         os.mkdir(f"{args.output_dir}")
-        open(f"{args.output_dir}/evaluation.json", "w").write(json.dumps(evaluation))
+        summary.update({"eval_" + k: v for k, v in evaluation.items()})
+        open(f"{args.output_dir}/evaluation.json", "w").write(json.dumps(summary))
+        print('hey :)')
     elif "wandb" in args.report_to or all:
-        wandb.log(evaluation)
-        wandb.finish()
+        if wandb.run is not None:
+            summary = {"eval/" + k: v for k, v in evaluation.items()}
+            wandb.log(summary)
+            wandb.finish()
 
     return evaluation
 

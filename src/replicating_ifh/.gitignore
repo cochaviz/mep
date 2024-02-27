@@ -1,9 +1,0 @@
-*.log
-__pycache__
-
-fine_tuners/lmbff
-fine_tuners/adapet
-
-data/fs_glue
-data/__pycache__
-data/fs_nli

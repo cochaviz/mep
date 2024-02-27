@@ -125,7 +125,7 @@ def run(
 
         # weird error if str instead of list of str
         # https://github.com/huggingface/transformers/issues/22429
-        training_args.report_to = ["wandb"] 
+        # training_args.report_to = ["wandb"] 
 
     # populate list with all methods
     args.methods = args.methods or Methods.list_available()
@@ -179,11 +179,17 @@ def run(
                 )))
 
             if args.use_wandb:
+                # set current run config
+                config = training_args.to_dict()
+                config["method"] = method
+                config["task"] = task
+                
                 wandb.init(
                     project="ifh", 
                     name=training_args.output_dir, 
-                    group=f"{args.model_name}/{method}",
+                    group=f"{top_level_output_dir}",
                     tags=[top_level_output_dir, args.model_name, method, task],
+                    config=training_args.to_dict(),
                     reinit=True
                 )
 
@@ -199,6 +205,7 @@ def run(
                 warnings.warn(f"Error running method {method}: {e}")
 
                 if args.use_wandb:
+                    wandb.alert(f"Error running method {method}: {e}")
                     wandb.finish(exit_code=1)
             
             if args.use_wandb:
