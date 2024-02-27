@@ -4,10 +4,10 @@
       "path": "../"
     },
     {
-      "path": "../src/replicating_ifh"
+      "path": "../experiments/ifh"
     },
     {
-      "path": "../src/jbfame"
+      "path": "../experiments/jbfame"
     }
   ],
   "settings": {
