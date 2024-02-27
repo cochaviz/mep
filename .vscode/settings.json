@@ -9,5 +9,5 @@
     "editor.defaultFormatter": "vscode.json-language-features"
   },
   "python.analysis.typeCheckingMode": "basic",
-  "python.analysis.autoImportCompletions": true
+  "python.analysis.autoImportCompletions": true,
 }
