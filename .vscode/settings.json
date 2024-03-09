@@ -4,7 +4,7 @@
     "mep.bib"
   ],
   "editor.defaultFormatter": "esbenp.prettier-vscode",
-  "pandocMarkdownPreview.extraPandocArguments": "--citeproc -F pandoc-crossref $([ -f ./metadata.yaml ] && echo \"--metadata=metadata.yaml\") -f markdown+mark",
+  "pandocMarkdownPreview.extraPandocArguments": "--citeproc -F pandoc-crossref $([ -f ./metadata.yaml ] && echo \"--metadata=metadata.yaml\") -f markdown+mark+emoji",
   "[jsonc]": {
     "editor.defaultFormatter": "vscode.json-language-features"
   },

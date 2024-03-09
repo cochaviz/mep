@@ -59,8 +59,8 @@ def label_templates(templates: pd.DataFrame, templates_labeled=pd.DataFrame()) -
     return templates_labeled
 
 def main(
-    templates_file = os.path.join("data", "jailbreak_prompts.csv"),
-    templates_labeled_file = os.path.join("data", "jailbreak_prompts_labeled.csv")
+    templates_file = os.path.join("data", "dan.csv"),
+    templates_labeled_file = os.path.join("data", "dan_labeled.csv")
 ):
     """
     CLI for labeling the failure modes of the prompts. Use the package `rich`
