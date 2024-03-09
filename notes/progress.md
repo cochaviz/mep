@@ -1,6 +1,9 @@
 ---
+author: Zohar Cochavi
+
 bibliography: ../mep.bib
 geometry: margin=1.5in
+documentclass: report
 ---
 
 # Bi-Weekly Progress Report
@@ -28,7 +31,7 @@ model sees after fine-tuning on certain tasks in a few-shot learning regime.
 They consider the Spearman's correlation between different methods based on the,
 as shown in @fig:mfh.
 
-![Fine-tuning methods and their Spearman's correlation which indicates the strength of a monotonic relation. If there is a: strong correlation, their 'ranking' of how much they improved at each task is similar, suggesting that certain tasks are 'intrinsically harder' than others.](images/mfh_spearman.png){#fig:mfh}
+![Fine-tuning methods and their Spearman's correlation which indicates the strength of a monotonic relation. If there is a: strong correlation, their 'ranking' of how much they improved at each task is similar, suggesting that certain tasks are 'intrinsically harder' than others.](images/mfh_spearman.svg){#fig:mfh}
 
 It does make intuitive sense that some tasks are harder than others, which I am
 trying to apply to the idea of _failure modes_ in jailbreaking as introduced by
@@ -195,7 +198,7 @@ to note is that the hyper-parameters do not exactly match, and I would like to
 verify my experimental setup with one of my peers. Still, after running the
 experiment and adding my results to that of the original authors (as shown in @fig:mfh), I was left with the correlation matrix shown in @fig:mfh_ext.
 
-![Spearman correlations as shown before, but extended using HuggingFace Transformers and a (small) subset of their available fine-tuners. For context, `adam` fine-tunes all the weights in the model, while `lora` is a Parameter-Efficient Fine-Tuning (PEFT) method. The value behind the underscore indicates the seed used to take a few-shot sample from a training set. The train-test split is the same among the extended methods.](images/mfh_spearman_ext.png){#fig:mfh_ext}
+![Spearman correlations as shown before, but extended using HuggingFace Transformers and a (small) subset of their available fine-tuners. For context, `adam` fine-tunes all the weights in the model, while `lora` is a Parameter-Efficient Fine-Tuning (PEFT) method. The value behind the underscore indicates the seed used to take a few-shot sample from a training set. The train-test split is the same among the extended methods.](images/mfh_spearman_ext.svg){#fig:mfh_ext}
 
 This figure shows that within each collection of methods there is a strong
 correlation between how well the methods perform on specific tasks. Here, the
