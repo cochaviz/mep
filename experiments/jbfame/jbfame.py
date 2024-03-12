@@ -105,7 +105,7 @@ def _load_datasets(data_dir: str, shuffle: Optional[int] = None, tasks: Optional
     datasets: DatasetDict = DatasetDict()
 
     if not os.path.exists(data_dir):
-        data.download_and_prepare(data_dir)        
+        data.download_and_prepare(output_dir=data_dir)        
 
     for file in glob(os.path.join(data_dir, "*.parquet")):
         task = file.split("/")[-1].split(".")[0]
