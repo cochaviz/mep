@@ -251,7 +251,7 @@ def run(
 
     datasets = _load_datasets(args.data_dir, args.shuffle, args.tasks)
     datasets = _add_response(datasets, args.unsafe_response) 
-    datasets = _preprocess_datasets(datasets, tokenizer)
+    datasets = _preprocess_datasets(datasets, tokenizer, token_limit=args.max_prompt_length)
 
     # we're running multiple experiments, so these will all reside in the
     # top_level_output_dir
