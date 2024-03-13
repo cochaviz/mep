@@ -7,10 +7,12 @@ from typing import Optional
 from dataclasses import dataclass, field
 import time
 
-from transformers import AutoModelForCausalLM, AutoTokenizer, TrainingArguments, Trainer, HfArgumentParser, BitsAndBytesConfig, DataCollatorForLanguageModeling
+from transformers import AutoModelForCausalLM, AutoTokenizer, TrainingArguments, Trainer, HfArgumentParser, BitsAndBytesConfig, DataCollatorForLanguageModeling, PreTrainedTokenizerBase
 from datasets import Dataset, DatasetDict
 from peft import LoraConfig, TaskType, get_peft_model
 from pyarrow import parquet
+import seaborn as sns
+import pandas as pd
 import torch
 
 import data
@@ -38,9 +40,6 @@ class TrainingArgumentsCustomDefaults(TrainingArguments):
     learning_rate: float = field(
         default=2.5e-5,
     )
-    bf16: bool = field(
-        default=True,
-    )
     optim: str = field(
         default="paged_adamw_8bit",
     )
@@ -67,9 +66,11 @@ class CustomArguments:
         metadata={ "help" : """Response the model should give to unsafe
                             questions.""" }
     )
-    use_peft: bool = field(
-        default=True,
-        metadata={ "help": """Whether to use PEFT (LORA) for training.""" }
+    max_prompt_length: int = field(
+        default=512,
+        metadata={ "help": """Maximum length of the prompt (in number of
+                           tokens). Any datapoints over this amount are
+                           discarded.""" }
     )
     # methods: Optional[list[str]] = field(
     #     default=None, 
@@ -96,7 +97,7 @@ class CustomArguments:
         metadata={ "help": """Whether to use wandb for logging. If True, make
                            you are logged in.""" }
     )
-    data_dir: Optional[str] = field( default="data",
+    data_dir: str = field( default="data",
         metadata={ "help": """Path to the dataset directory. If None, no caching
                            will be used and data will be downloaded on every
                            run.""" }
@@ -151,9 +152,15 @@ def _add_response(datasets: DatasetDict, response: str) -> DatasetDict:
         dataset.reset_format()
     return datasets
 
-def _preprocess_datasets(datasets: DatasetDict, tokenizer) -> DatasetDict:
+def _preprocess_datasets(datasets: DatasetDict, tokenizer: PreTrainedTokenizerBase, token_limit: Optional[int] = None) -> DatasetDict:
     def tokenize(row: dict):
-        row["input_ids"] = tokenizer(row["prompt"], return_tensors="pt").input_ids
+        row["input_ids"] = tokenizer(
+            row["prompt"], 
+            return_tensors="pt",
+            truncation=True,
+            max_length=token_limit or tokenizer.model_max_length,
+            padding="max_length",
+        ).input_ids
         return row
 
     return datasets.map(
@@ -201,6 +208,27 @@ def _load_model(model_path):
 
     return model, AutoTokenizer.from_pretrained(model_path)
 
+def data_info(
+    args: CustomArguments,
+) -> pd.DataFrame:
+    def set_length(row):
+        row["length"] = len(row["prompt"])
+        return row 
+
+    datasets = _load_datasets(args.data_dir)
+    datasets = _add_response(datasets, args.unsafe_response)
+
+    len_df = pd.DataFrame()
+
+    for task, dataset in datasets.items():
+        len_set = dataset.add_column("task", [task] * len(dataset))
+        len_set = len_set.map(set_length, remove_columns=["prompt", "q_id"])
+        len_df = pd.concat([len_df, len_set.to_pandas()])
+
+    sns.histplot(data=len_df, x="length", hue="task", kde=True, common_norm=False)
+    
+    return len_df.groupby("task").describe()
+
 def run(
         args: CustomArguments,
         training_args: TrainingArgumentsCustomDefaults,
@@ -220,22 +248,13 @@ def run(
     model, tokenizer = _load_model(args.model_path)
 
     datasets = _load_datasets(args.data_dir, args.shuffle, args.tasks)
-    # for now we assume all questions are unsafe, this might change in the future
     datasets = _add_response(datasets, args.unsafe_response) 
     datasets = _preprocess_datasets(datasets, tokenizer)
+
 
     # we're running multiple experiments, so these will all reside in the
     # top_level_output_dir
     top_level_output_dir = training_args.output_dir
-
-    # peft is on by default
-    if args.use_peft:
-        peft = LoraConfig(
-            task_type= TaskType.CAUSAL_LM, 
-            lora_alpha=32, 
-            lora_dropout=0.1
-        )
-        model = get_peft_model(model, peft)
         
     for task, dataset in datasets.items():
         training_args.output_dir = f"{top_level_output_dir}/{args.model_path}/{task}" 
