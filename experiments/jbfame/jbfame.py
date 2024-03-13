@@ -164,10 +164,17 @@ def _preprocess_datasets(datasets: DatasetDict, tokenizer: PreTrainedTokenizerBa
         ).input_ids
         return row
 
-    return datasets.map(
+    # tokenize and remove redundant
+    datasets = datasets.map(
         tokenize,
         remove_columns=datasets["null"].column_names,
     )
+    # label has to be populized, but input ids is effectively what we 
+    # would like the model to do
+    for dataset in datasets.values():
+        dataset["label"] = dataset["input_ids"].copy()
+
+    return datasets
 
 def _load_model(model_path):
     """
