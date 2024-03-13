@@ -10,7 +10,7 @@ from numpy import pad
 
 from transformers import AutoModelForCausalLM, AutoTokenizer, TrainingArguments, Trainer, HfArgumentParser, BitsAndBytesConfig, DataCollatorForLanguageModeling, PreTrainedTokenizerBase
 from datasets import Dataset, DatasetDict
-from peft import LoraConfig, TaskType, get_peft_model
+from peft import LoraConfig, TaskType, get_peft_model, prepare_model_for_kbit_training
 from pyarrow import parquet
 import seaborn as sns
 import pandas as pd
@@ -210,8 +210,8 @@ def _load_model(model_path):
     model = AutoModelForCausalLM.from_pretrained(
         model_path, quantization_config=bnb_config
     )
+    model = prepare_model_for_kbit_training(model)
     model = get_peft_model(model, lora_config)
-
     return model, AutoTokenizer.from_pretrained(model_path)
 
 def data_info(
