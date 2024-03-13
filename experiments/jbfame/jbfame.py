@@ -172,6 +172,7 @@ def _preprocess_datasets(datasets: DatasetDict, tokenizer: PreTrainedTokenizerBa
     return datasets.map(
         tokenize,
         remove_columns=datasets["null"].column_names,
+        batched=True
     )
 
 def _load_model(model_path):
