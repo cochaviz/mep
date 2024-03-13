@@ -7,10 +7,11 @@ from typing import Optional
 from dataclasses import dataclass, field
 import time
 
-from transformers import AutoModelForCausalLM, AutoTokenizer, TrainingArguments, Trainer, HfArgumentParser
+from transformers import AutoModelForCausalLM, AutoTokenizer, TrainingArguments, Trainer, HfArgumentParser, BitsAndBytesConfig, DataCollatorForLanguageModeling
 from datasets import Dataset, DatasetDict
 from peft import LoraConfig, TaskType, get_peft_model
 from pyarrow import parquet
+import torch
 
 import data
 
@@ -18,15 +19,39 @@ import data
 class TrainingArgumentsCustomDefaults(TrainingArguments):
     output_dir: str = field(
         default=time.strftime("%Y-%m-%d-%H-%M-%S"),
-        # metadata=TrainingArguments("").log_level.metadata
     )
+    warmup_steps: int = field(
+        default=1,
+    )
+    per_device_train_batch_size: int = field(
+        default=2,
+    )
+    gradient_accumulation_steps: int = field(
+        default=1,
+    )
+    gradient_checkpointing: bool = field(
+        default=True,
+    )
+    max_steps: int = field(
+        default=500,
+    )
+    learning_rate: float = field(
+        default=2.5e-5,
+    )
+    bf16: bool = field(
+        default=True,
+    )
+    optim: str = field(
+        default="paged_adamw_8bit",
+    )
+
 
 @dataclass
 class CustomArguments:
     """Arguments for the script. If you'd like to change the training
     configuration, use TrainingArguments."""
 
-    model_name: str = field(
+    model_path: str = field(
         default="meta-llama/Llama-2-7b-chat-hf", 
         metadata={ "help": """Name of the model, or path as found in the
                            Huggingface model hub.""" }
@@ -136,9 +161,49 @@ def _preprocess_datasets(datasets: DatasetDict, tokenizer) -> DatasetDict:
         remove_columns=datasets["null"].column_names,
     )
 
+def _load_model(model_path):
+    """
+    Load model and tokenizer from model_path using various optimization
+    techniques such as 4bit quantization and PEFT. Most of this has been taken
+    from the [following
+    script](https://colab.research.google.com/github/brevdev/notebooks/blob/main/llama2-finetune-own-data.ipynb).
+    """
+    # quantization config
+    bnb_config = BitsAndBytesConfig(
+        load_in_4bit=True,
+        bnb_4bit_use_double_quant=True,
+        bnb_4bit_quant_type="nf4",
+        bnb_4bit_compute_dtype=torch.bfloat16
+    )
+    # peft config
+    lora_config = LoraConfig(
+        r=32,
+        lora_alpha=64,
+        target_modules=[
+            "q_proj",
+            "k_proj",
+            "v_proj",
+            "o_proj",
+            "gate_proj",
+            "up_proj",
+            "down_proj",
+            "lm_head",
+        ],
+        bias="none",
+        lora_dropout=0.05,
+        task_type="CAUSAL_LM",
+    )
+    # retrieve the quantized model and its parameter-efficient representation
+    model = AutoModelForCausalLM.from_pretrained(
+        model_path, quantization_config=bnb_config
+    )
+    model = get_peft_model(model, lora_config)
+
+    return model, AutoTokenizer.from_pretrained(model_path)
+
 def run(
         args: CustomArguments,
-        training_args: TrainingArguments,
+        training_args: TrainingArgumentsCustomDefaults,
     ):
     if args.use_wandb: 
         try:
@@ -152,15 +217,12 @@ def run(
             args.use_wandb = False
 
     # load the model and tokenizer
-    model = AutoModelForCausalLM.from_pretrained(args.model_name)
-    tokenizer = AutoTokenizer.from_pretrained(args.model_name)
+    model, tokenizer = _load_model(args.model_path)
 
     datasets = _load_datasets(args.data_dir, args.shuffle, args.tasks)
     # for now we assume all questions are unsafe, this might change in the future
     datasets = _add_response(datasets, args.unsafe_response) 
     datasets = _preprocess_datasets(datasets, tokenizer)
-
-    print(datasets)
 
     # we're running multiple experiments, so these will all reside in the
     # top_level_output_dir
@@ -176,7 +238,7 @@ def run(
         model = get_peft_model(model, peft)
         
     for task, dataset in datasets.items():
-        training_args.output_dir = f"{top_level_output_dir}/{args.model_name}/{task}" 
+        training_args.output_dir = f"{top_level_output_dir}/{args.model_path}/{task}" 
 
         # usage of wandb is off by default
         if args.use_wandb:
@@ -188,13 +250,13 @@ def run(
                 project="jbfame", 
                 name=training_args.output_dir, 
                 group=f"{top_level_output_dir}",
-                tags=[top_level_output_dir, args.model_name, task],
+                tags=[top_level_output_dir, args.model_path, task],
                 config=training_args.to_dict(),
                 reinit=True
             )
 
-        # since we do not necessarily care about the performane, we do not need
-        # to compute metrics or an evaluation set
+        # since we do not necessarily care about the model performance, we do
+        # not need to compute metrics or an evaluation set
         Trainer(
             model=model,
             args=training_args,    
@@ -202,6 +264,8 @@ def run(
             tokenizer=tokenizer,
             # computer_metrics=compute_metrics
         ).train()
+
+    return top_level_output_dir
 
 if __name__=="__main__":
     parser = HfArgumentParser([CustomArguments, TrainingArgumentsCustomDefaults])
