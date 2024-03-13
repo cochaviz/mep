@@ -6,6 +6,7 @@ from glob import glob
 from typing import Optional
 from dataclasses import dataclass, field
 import time
+from numpy import pad
 
 from transformers import AutoModelForCausalLM, AutoTokenizer, TrainingArguments, Trainer, HfArgumentParser, BitsAndBytesConfig, DataCollatorForLanguageModeling, PreTrainedTokenizerBase
 from datasets import Dataset, DatasetDict
@@ -246,11 +247,11 @@ def run(
 
     # load the model and tokenizer
     model, tokenizer = _load_model(args.model_path)
+    tokenizer.pad_token = tokenizer.eos_token
 
     datasets = _load_datasets(args.data_dir, args.shuffle, args.tasks)
     datasets = _add_response(datasets, args.unsafe_response) 
     datasets = _preprocess_datasets(datasets, tokenizer)
-
 
     # we're running multiple experiments, so these will all reside in the
     # top_level_output_dir
