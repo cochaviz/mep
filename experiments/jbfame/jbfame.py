@@ -165,7 +165,7 @@ def _preprocess_datasets(datasets: DatasetDict, tokenizer: PreTrainedTokenizerBa
 
         # label has to be populized, but input ids is effectively what we 
         # would like the model to do
-        row["label"] = row["input_ids"].copy()
+        row["label"] = row["input_ids"].detach().clone()
 
         return row
 
