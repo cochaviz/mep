@@ -288,6 +288,7 @@ def run(
             train_dataset=dataset,
             tokenizer=tokenizer,
             # computer_metrics=compute_metrics
+            data_collator=DataCollatorForLanguageModeling(tokenizer, mlm=False),
         ).train()
 
     return top_level_output_dir
