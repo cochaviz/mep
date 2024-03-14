@@ -159,20 +159,16 @@ def _preprocess_datasets(datasets: DatasetDict, tokenizer: PreTrainedTokenizerBa
             row["prompt"], 
             return_tensors="pt",
             truncation=False,
-            max_length=token_limit or tokenizer.model_max_length,
-            padding="max_length",
+            padding=True,
         ).input_ids
-
-        # if set, flag the row to indicate whether the token limit was exceeded
-        row["exceeds_token_limit"] = row["input_ids"].shape[1] > token_limit if token_limit else False
 
         return row
 
-    return datasets.map(
+    return datasets.filter(lambda row: not token_limit or not len(row["prompt"]) > token_limit).map(
         tokenize,
         remove_columns=datasets["null"].column_names,
         batched=True
-    ).filter(lambda row: not row["exceeds_token_limit"])
+    )
 
 def _load_model(model_path):
     """
@@ -215,7 +211,7 @@ def _load_model(model_path):
     return model, AutoTokenizer.from_pretrained(model_path)
 
 def data_info(
-    args: CustomArguments,
+    args: CustomArguments, figure_path: Optional[str] = None
 ) -> pd.DataFrame:
     def set_length(row):
         row["length"] = len(row["prompt"])
@@ -232,6 +228,10 @@ def data_info(
         len_df = pd.concat([len_df, len_set.to_pandas()])
 
     sns.histplot(data=len_df, x="length", hue="task", kde=True, common_norm=False)
+
+    if figure_path:
+        import matplotlib.pyplot as plt
+        plt.savefig(figure_path)
     
     return len_df.groupby("task").describe()
 
