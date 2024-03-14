@@ -158,10 +158,14 @@ def _preprocess_datasets(datasets: DatasetDict, tokenizer: PreTrainedTokenizerBa
         row["input_ids"] = tokenizer(
             row["prompt"], 
             return_tensors="pt",
-            truncation=True,
+            truncation=False,
             max_length=token_limit or tokenizer.model_max_length,
             padding="max_length",
         ).input_ids
+
+        if row["input_ids"].shape[1] > token_limit:
+            warnings.warn(f"Prompt too long for task {row['task']}. Skipping..")
+            return
 
         # label has to be populized, but input ids is effectively what we 
         # would like the model to do
