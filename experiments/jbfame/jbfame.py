@@ -1,14 +1,13 @@
 #!/usr/bin/env python
 
 import os
-import warnings
 from glob import glob
 from typing import Optional
 from dataclasses import dataclass, field
 import time
 from numpy import pad
 
-from transformers import AutoModelForCausalLM, AutoTokenizer, TrainingArguments, Trainer, HfArgumentParser, BitsAndBytesConfig, DataCollatorForLanguageModeling, PreTrainedTokenizerBase
+from transformers import AutoModelForCausalLM, AutoTokenizer, TrainingArguments, Trainer, HfArgumentParser, BitsAndBytesConfig, DataCollatorForLanguageModeling, PreTrainedTokenizerBase, PreTrainedModel
 from datasets import Dataset, DatasetDict
 from peft import LoraConfig, TaskType, get_peft_model, prepare_model_for_kbit_training
 from pyarrow import parquet
@@ -117,11 +116,30 @@ class CustomArguments:
 
         return str_repr
 
-def filter():
+def filter_unsafe_llamaguard(dataset: DatasetDict):
     """
-    Filter out all the non-effective jailbreaking prompts
+    Filter out all the unsafe questions or ineffective jailbreaking responses.
+    The rows should be in the 'chat' format. In case only questions have to be
+    judged, should only contain the 'user' 
     """
-    pass
+
+    model_id = "meta-llama/LlamaGuard-7b"
+    tokenizer = AutoTokenizer.from_pretrained(model_id)
+    model = AutoModelForCausalLM.from_pretrained(model_id)
+
+    def is_unsafe(row):
+        chat = [ {"role": "user", "content": row["prompt"]} ]
+
+        if "response" in row:
+            chat.append({"role": "assistant", "content": row["response"]})
+
+        input_ids = tokenizer.apply_chat_template(chat, return_tensors="pt")
+        output = model.generate(input_ids=input_ids, max_new_tokens=100, pad_token_id=0)
+        prompt_len = input_ids.shape[-1]
+
+        return tokenizer.decode(output[0][prompt_len:], skip_special_tokens=True) != 'safe'
+
+    return dataset.filter(is_unsafe)  
 
 def _load_datasets(data_dir: str, shuffle: Optional[int] = None, tasks: Optional[list[str]] = None):
     """
@@ -146,17 +164,35 @@ def _load_datasets(data_dir: str, shuffle: Optional[int] = None, tasks: Optional
        
     return datasets
 
-def _add_response(datasets: DatasetDict, response: str) -> DatasetDict:
-    for dataset in datasets.values():
-        dataset.set_format("pandas")
-        dataset["prompt"].map(lambda x: x + " " + response)
-        dataset.reset_format()
-    return datasets
-
-def _preprocess_datasets(datasets: DatasetDict, tokenizer: PreTrainedTokenizerBase, token_limit: Optional[int] = None) -> DatasetDict:
+def _preprocess_datasets(
+    datasets: DatasetDict, 
+    tokenizer: Optional[PreTrainedTokenizerBase],  # skips tokenization if None
+    response: str, 
+    character_limit: Optional[int] = None # skips character limit if None
+) -> DatasetDict:
+    """
+    Takes a dataset and preprocesses it by adding the response to the prompt,
+    and tokenizing the prompt and response. If tokenizer is None, only the
+    response is added to all the prompts in the huggingface 'chat' format which
+    can be found in the 'chat' column. If character_limit is not None, all
+    prompts exceeding this limit are removed. 
+    """
+ 
+    def add_response(row: dict):
+        row["chat"] = [ 
+            { "role": "user", "content": row["prompt"] }, 
+            { "role": "assistant", "content": response }  
+        ]
+        return row    
+    
     def tokenize(row: dict):
-        row["input_ids"] = tokenizer(
-            row["prompt"], 
+        if not tokenizer:
+            raise ValueError("Tokenizer cannot be None.")
+
+        # The combination of 'truncation = False' and 'padding = True' ensures
+        # that the input_ids ensures that each batch has the same length
+        row["input_ids"] = tokenizer.apply_chat_template(
+            row["chat"],
             return_tensors="pt",
             truncation=False,
             padding=True,
@@ -164,61 +200,92 @@ def _preprocess_datasets(datasets: DatasetDict, tokenizer: PreTrainedTokenizerBa
 
         return row
 
-    return datasets.filter(lambda row: not token_limit or not len(row["prompt"]) > token_limit).map(
+    # HACK: ideally, the token limit would be based on the actual number of
+    # tokens. Here, it is based on the number of characters in the prompt. This
+    # is not ideal, but it allows for easy batching and is good enough for me.
+    processed = datasets.map(add_response).filter(lambda row: not character_limit or not len(row["prompt"]) > character_limit)
+
+    if not tokenizer:
+        return processed
+
+    return processed.map(
         tokenize,
         remove_columns=datasets["null"].column_names,
         batched=True
     )
 
-def _load_model(model_path):
+def _load_model(model_path: str): 
     """
-    Load model and tokenizer from model_path using various optimization
-    techniques such as 4bit quantization and PEFT. Most of this has been taken
-    from the [following
-    script](https://colab.research.google.com/github/brevdev/notebooks/blob/main/llama2-finetune-own-data.ipynb).
+    Loads the model and tokenizer from the model_path. If the model_path starts
+    with meta-llama, the model is loaded with 4bit quantization and PEFT to
+    optimize training and reduce resource usage.
     """
-    # quantization config
-    bnb_config = BitsAndBytesConfig(
-        load_in_4bit=True,
-        bnb_4bit_use_double_quant=True,
-        bnb_4bit_quant_type="nf4",
-        bnb_4bit_compute_dtype=torch.bfloat16
-    )
-    # peft config
-    lora_config = LoraConfig(
-        r=32,
-        lora_alpha=64,
-        target_modules=[
-            "q_proj",
-            "k_proj",
-            "v_proj",
-            "o_proj",
-            "gate_proj",
-            "up_proj",
-            "down_proj",
-            "lm_head",
-        ],
-        bias="none",
-        lora_dropout=0.05,
-        task_type="CAUSAL_LM",
-    )
-    # retrieve the quantized model and its parameter-efficient representation
-    model = AutoModelForCausalLM.from_pretrained(
-        model_path, quantization_config=bnb_config
-    )
-    model = prepare_model_for_kbit_training(model)
-    model = get_peft_model(model, lora_config)
-    return model, AutoTokenizer.from_pretrained(model_path)
+    def _load_model_llama(model_path: str):
+        """
+        Load model and tokenizer from model_path using various optimization
+        techniques such as 4bit quantization and PEFT. Most of this has been taken
+        from the [following
+        script](https://colab.research.google.com/github/brevdev/notebooks/blob/main/llama2-finetune-own-data.ipynb).
+        """
+        # quantization config
+        bnb_config = BitsAndBytesConfig(
+            load_in_4bit=True,
+            bnb_4bit_use_double_quant=True,
+            bnb_4bit_quant_type="nf4",
+            bnb_4bit_compute_dtype=torch.bfloat16
+        )
+        # peft config
+        lora_config = LoraConfig(
+            r=32,
+            lora_alpha=64,
+            target_modules=[
+                "q_proj",
+                "k_proj",
+                "v_proj",
+                "o_proj",
+                "gate_proj",
+                "up_proj",
+                "down_proj",
+                "lm_head",
+            ],
+            bias="none",
+            lora_dropout=0.05,
+            task_type="CAUSAL_LM",
+        )
+        # retrieve the quantized model and its parameter-efficient representation
+        model = AutoModelForCausalLM.from_pretrained(
+            model_path, quantization_config=bnb_config
+        )
+        model = prepare_model_for_kbit_training(model)
+        model = get_peft_model(model, lora_config)
+
+        return model, AutoTokenizer.from_pretrained(model_path)
+
+    if model_path.startswith("meta-llama"):
+        return _load_model_llama(model_path)
+
+    return AutoModelForCausalLM.from_pretrained(model_path), AutoTokenizer.from_pretrained(model_path) 
 
 def data_info(
     args: CustomArguments, figure_path: Optional[str] = None
 ) -> pd.DataFrame:
+    """
+    Returns a description of each task in the dataset, and creates a histogram
+    of the length of the prompts for each task. If figure_path is not None, the
+    plot is saved to this location. Otherwise, call plt.show() to display the
+    plot.
+    """
+
     def set_length(row):
         row["length"] = len(row["prompt"])
         return row 
 
     datasets = _load_datasets(args.data_dir)
-    datasets = _add_response(datasets, args.unsafe_response)
+    datasets = _preprocess_datasets(
+        datasets, 
+        tokenizer=None, 
+        response=args.unsafe_response
+    )
 
     len_df = pd.DataFrame()
 
@@ -252,11 +319,26 @@ def run(
 
     # load the model and tokenizer
     model, tokenizer = _load_model(args.model_path)
-    tokenizer.pad_token = tokenizer.eos_token
 
-    datasets = _load_datasets(args.data_dir, args.shuffle, args.tasks)
-    datasets = _add_response(datasets, args.unsafe_response) 
-    datasets = _preprocess_datasets(datasets, tokenizer, token_limit=args.max_prompt_length)
+    # llama and other models do not have a pad token by default
+    if tokenizer.pad_token_id is None:
+        tokenizer.pad_token = tokenizer.eos_token
+
+    # load the datasets and download them if necessary
+    datasets = _load_datasets(
+        args.data_dir, 
+        args.shuffle, 
+        args.tasks
+    )
+    # preprocess the datasets; add the unsafe response tokenize them, remove
+    # prompts exceeding the character limit, and tokenize them according to the
+    # huggingface 'chat' format
+    datasets = _preprocess_datasets(
+        datasets, 
+        tokenizer, 
+        response=args.unsafe_response, 
+        character_limit=args.max_prompt_length
+    )
 
     # we're running multiple experiments, so these will all reside in the
     # top_level_output_dir
@@ -287,14 +369,18 @@ def run(
             args=training_args,    
             train_dataset=dataset,
             tokenizer=tokenizer,
-            # computer_metrics=compute_metrics
-            data_collator=DataCollatorForLanguageModeling(tokenizer, mlm=False),
+            # I'll be honest that I'm not sure what this option exactly does,
+            # but it is supposed to speed up training
+            data_collator=DataCollatorForLanguageModeling(tokenizer, mlm=False), 
         ).train()
 
     return top_level_output_dir
 
 if __name__=="__main__":
-    parser = HfArgumentParser([CustomArguments, TrainingArgumentsCustomDefaults])
+    parser = HfArgumentParser(
+        [CustomArguments, TrainingArgumentsCustomDefaults], 
+        description="Run the JBFAME experiments. Check the jbfame jupyter notebook for more information on the exact parameters used in the experiments and the results."
+    )
     parser.add_argument("--list-tasks", action="store_true", help="List all available tasks.")
 
     args = parser.parse_args_into_dataclasses()
