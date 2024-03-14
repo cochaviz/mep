@@ -163,13 +163,8 @@ def _preprocess_datasets(datasets: DatasetDict, tokenizer: PreTrainedTokenizerBa
             padding="max_length",
         ).input_ids
 
-        if row["input_ids"].shape[1] > token_limit:
-            warnings.warn(f"Prompt too long for task {row['task']}. Skipping..")
-            return
-
-        # label has to be populized, but input ids is effectively what we 
-        # would like the model to do
-        # row["label"] = row["input_ids"].detach().clone()
+        # if set, flag the row to indicate whether the token limit was exceeded
+        row["exceeds_token_limit"] = row["input_ids"].shape[1] > token_limit if token_limit else False
 
         return row
 
@@ -177,7 +172,7 @@ def _preprocess_datasets(datasets: DatasetDict, tokenizer: PreTrainedTokenizerBa
         tokenize,
         remove_columns=datasets["null"].column_names,
         batched=True
-    )
+    ).filter(lambda row: not row["exceeds_token_limit"])
 
 def _load_model(model_path):
     """
