@@ -247,10 +247,7 @@ def _filter_unsafe_llamaguard(dataset: DatasetDict):
     The rows should be in the 'chat' format. In case only questions have to be
     judged, should only contain the 'user' 
     """
-
-    model_id = "meta-llama/LlamaGuard-7b"
-    tokenizer = AutoTokenizer.from_pretrained(model_id)
-    model = AutoModelForCausalLM.from_pretrained(model_id)
+    model, tokenizer = _load_model("meta-llama/LlamaGuard-7b")
 
     def is_unsafe(row):
         chat = [ {"role": "user", "content": row["prompt"]} ]
