@@ -116,31 +116,6 @@ class CustomArguments:
 
         return str_repr
 
-def filter_unsafe_llamaguard(dataset: DatasetDict):
-    """
-    Filter out all the unsafe questions or ineffective jailbreaking responses.
-    The rows should be in the 'chat' format. In case only questions have to be
-    judged, should only contain the 'user' 
-    """
-
-    model_id = "meta-llama/LlamaGuard-7b"
-    tokenizer = AutoTokenizer.from_pretrained(model_id)
-    model = AutoModelForCausalLM.from_pretrained(model_id)
-
-    def is_unsafe(row):
-        chat = [ {"role": "user", "content": row["prompt"]} ]
-
-        if "response" in row:
-            chat.append({"role": "assistant", "content": row["response"]})
-
-        input_ids = tokenizer.apply_chat_template(chat, return_tensors="pt")
-        output = model.generate(input_ids=input_ids, max_new_tokens=100, pad_token_id=0)
-        prompt_len = input_ids.shape[-1]
-
-        return tokenizer.decode(output[0][prompt_len:], skip_special_tokens=True) != 'safe'
-
-    return dataset.filter(is_unsafe)  
-
 def _load_datasets(data_dir: str, shuffle: Optional[int] = None, tasks: Optional[list[str]] = None):
     """
     Reads *.parquet files in data_dir and returns them as a
@@ -266,6 +241,51 @@ def _load_model(model_path: str):
 
     return AutoModelForCausalLM.from_pretrained(model_path), AutoTokenizer.from_pretrained(model_path) 
 
+def _filter_unsafe_llamaguard(dataset: DatasetDict):
+    """
+    Filter out all the unsafe questions or ineffective jailbreaking responses.
+    The rows should be in the 'chat' format. In case only questions have to be
+    judged, should only contain the 'user' 
+    """
+
+    model_id = "meta-llama/LlamaGuard-7b"
+    tokenizer = AutoTokenizer.from_pretrained(model_id)
+    model = AutoModelForCausalLM.from_pretrained(model_id)
+
+    def is_unsafe(row):
+        chat = [ {"role": "user", "content": row["prompt"]} ]
+
+        if "response" in row:
+            chat.append({"role": "assistant", "content": row["response"]})
+
+        input_ids = tokenizer.apply_chat_template(chat, return_tensors="pt")
+        output = model.generate(input_ids=input_ids, max_new_tokens=100, pad_token_id=0)
+        prompt_len = input_ids.shape[-1]
+
+        return tokenizer.decode(output[0][prompt_len:], skip_special_tokens=True) != 'safe'
+
+    return dataset.filter(is_unsafe)  
+
+def filter_unsafe_questions(args: CustomArguments, model: PreTrainedModel, tokenizer: PreTrainedTokenizerBase):
+    if not model or not tokenizer:
+        model, tokenizer = _load_model(args.model_path)
+
+    null = _load_datasets(args.data_dir, args.shuffle, ["null"])
+
+    if args.model_path.startswith("meta-llama"):
+        null = _filter_unsafe_llamaguard(null)
+
+    return null
+
+def filter_unsafe_responses(args: CustomArguments, model: PreTrainedModel, tokenizer: PreTrainedTokenizerBase, datasets: DatasetDict):
+    if not model or not tokenizer:
+        model, tokenizer = _load_model(args.model_path)
+
+    if args.model_path.startswith("meta-llama"):
+        null = _filter_unsafe_llamaguard(datasets)
+
+    return datasets
+
 def data_info(
     args: CustomArguments, figure_path: Optional[str] = None
 ) -> pd.DataFrame:
@@ -294,12 +314,21 @@ def data_info(
         len_set = len_set.map(set_length, remove_columns=["prompt", "q_id"])
         len_df = pd.concat([len_df, len_set.to_pandas()])
 
-    sns.histplot(data=len_df, x="length", hue="task", kde=True, common_norm=False)
+    sns.histplot(
+        data=len_df, 
+        x="length", 
+        hue="task", 
+        kde=True, 
+        common_norm=False, 
+        binwidth=200, 
+        edgecolor="black"
+    )
 
     if figure_path:
         import matplotlib.pyplot as plt
+        sns.set_theme(context="paper")
         plt.savefig(figure_path)
-    
+
     return len_df.groupby("task").describe()
 
 def run(
@@ -339,7 +368,6 @@ def run(
         response=args.unsafe_response, 
         character_limit=args.max_prompt_length
     )
-
     # we're running multiple experiments, so these will all reside in the
     # top_level_output_dir
     top_level_output_dir = training_args.output_dir
