@@ -266,7 +266,11 @@ def _filter_unsafe_llamaguard(dataset: DatasetDict):
 
     return dataset.filter(is_unsafe)  
 
-def filter_unsafe_questions(args: CustomArguments, model: PreTrainedModel, tokenizer: PreTrainedTokenizerBase):
+def filter_unsafe_questions(
+    args: CustomArguments, 
+    model: Optional[PreTrainedModel] = None, 
+    tokenizer: Optional[PreTrainedTokenizerBase] = None
+):
     if not model or not tokenizer:
         model, tokenizer = _load_model(args.model_path)
 
