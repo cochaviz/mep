@@ -108,16 +108,15 @@ def _check_tasks(tasks: list[str]):
     [ _check_task(task) for task in tasks ]
 
 _download_task: dict[str, Callable[[str], str]] = {
-    "dan": _download_dan,
     "null": _download_null,
+    "dan": _download_dan,
     "aart": lambda output_dir: os.path.join(output_dir, "aart.csv")  # aart is generated from null
 }
 
 _prepare_task: dict[str, Callable[[dict, dict], str]] = {
-    "dan": _prepare_dan,
     "null": _prepare_null,
+    "dan": _prepare_dan,
     "aart": _prepare_aart,
-    # "uaa": lambda thing: "lol",
 }
 
 try:

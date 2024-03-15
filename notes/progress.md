@@ -1,12 +1,15 @@
 ---
+title: Bi-Weekly Progress Report
 author: Zohar Cochavi
+
+toc: true
 
 bibliography: ../mep.bib
 geometry: margin=1.5in
 documentclass: report
 ---
 
-# Bi-Weekly Progress Report
+## Preface
 
 These notes represent the progress made during a two-week stretch. The idea is
 that I can show my progress from beginning to end at each bi-weekly meeting. I
@@ -130,7 +133,7 @@ Secondly, concerning the progress I made on setting up experiments:
   same Bert model, but with different fine-tuning methods provided by
   HuggingFace Transformers.
 - I've successfully ran a small experiment, and gathered and analyzed results,
-  on the setup mentioned above. The conclusion seems taht
+  on the setup mentioned above.
 
 The following two subsections expand and motivate the conclusions and decisions
 I've made above. In the last section, I also talk about the experiment I ran and
@@ -227,5 +230,88 @@ when training using the different fine-tuning methods in the original results.
 This, however, is neither confirmed or denied by the authors in the main text
 body or the appendix. I have written to the authors to ask whether they can
 confirm my suspicion, but I do not think the assumption is unreasonable.
+
+## Feb 29 - Mar 14
+
+Let me start by saying that I have been dealing with a hernia during this time
+which severely impacted my productivity. I've not made as much progress as I
+would have liked, but I did take some steps in the right direction.
+
+### Task Difficulty
+
+Firstly, as discussed in the last progress report, the _intrinsic few-shot
+hardness method_ is not appropriate for establishing task difficulty, at least
+not in its basic form. Looking for alternative ways to tackle this issue, I came
+across a paper called _Exploring the Learning Difficulty of Data: Theory and
+Measure_ by @zhuExploringLearningDifficulty2024. The paper introduces various
+alternatives to my first idea of 'the discrepancy in task performance' before
+and after fine-tuning. Of course, they measure slightly different things, and I
+am thinking about which method is most appropriate for my context. However, the
+simplest method they found in literature, which also happens to be widely used,
+is effectively a subset of my first idea. Namely, taking the loss in terms of
+cross-entropy as the metric for task difficulty (higher means more difficult).
+I would therefore start with this and then I can always introduce evaluation
+sets to measure accuracy. Still, I would like to explore or at least entertain
+different measures of task difficulty in the future.
+
+### Jailbreaking by Failure-Mode
+
+With that in mind, I moved on to starting work on the creating a set of tasks,
+each of which representing a particular failure mode. In short, I have the
+following tasks:
+
+- `null` (_NONE_): A set of unsafe questions from the paper by @shenAnythingNowCharacterizing2023. These are specifically unsafe per OpenAI's
+  policy, it might be necessary to first determine which questions are
+  considered unsafe by the model under testing. This is currently not
+  implemented, because I wanted to collect some preliminary results.
+
+- `dan` (_CO_): A collection of jailbreaking prompts from the _Do Anything Now_ paper
+  by @shenAnythingNowCharacterizing2023 to which the unsafe questions from
+  `null` are appended. In the paper, responses are considered unsafe when it
+  does not explicitly start with 'I cannot help you with that' and various
+  _explicit_ variations. They performed their experiments on GPT3/4 but, using
+  these attacks on LLaMA2, I've noticed some responses to be rejecting the
+  question in the 'vibe' of the persona created in the jailbreaking prompt.
+  These do not correspond exactly to the 'Sorry, but I cannot help with that.'
+  format. Intuitively, it seems like targeting such a format in training should
+  be easier than when the unsafe question would be completely answered (an
+  argument for loss-based difficulty). Determining the accuracy of this response
+  is more difficult, but we could use Meta's PurpleLlama to classify such
+  prompts and determine accuracy [@bhattPurpleLlamaCyberSecEval2023].
+
+- `aart` (_MG_): This collection converts (ideally sensitive) words into ascii
+  art to jailbreak the model. To do this, we use the _art_ ascii art library for
+  python and the nlp library _scapy_ to determine which words to convert.
+  Currently, we simply take the unsafe question, and  create a row with the
+  non-stopword as ascii art for each non-stopword in the sentence. This is not
+  perfect, but it does reduce the number of examples and can easily be improved
+  in the future.
+
+I have more that I would like to introduce such as `code` where the question is
+encoded in various encodings like BASE64, or `utaa` as proposed in _Universal
+and Transferable Adversarial Attacks on Aligned Language Models_ by
+@zouUniversalTransferableAdversarial2023. Some are clearly more involved than
+others in terms of their setup, but I would like a _CO_ task with more concise
+examples first. If we draw a histogram of the prompt length for each task, we
+see that the `dan` task severely 'out talks' the others (see
+@fig:task_distributions and @tbl:task_distributions).
+
+![Distribution of the number of characters in each distribution. I am not sure what kind of effect the prompt length has on the difficulty of a particular task, but I think having a _CO_ task with shorter prompts is necessary for a good experiment.](images/task_distribution.svg){#fig:task_distributions}
+
+| task | count   |     mean   |     std      |  min   |   25%   |   50%   |   75%   |   max   |
+|------|---------|------------|--------------|--------|---------|---------|---------|---------|
+| aart |  2545.0 |  350.596464|  90.153073   |  138.0 |  289.0  |  343.0  |  406.00 |  897.0  |
+| dan  | 259740.0| 2069.696558| 1591.346062  |   53.0 |  901.0  | 1639.0  | 2835.00 | 12010.0 |
+| null |   390.0 |   77.369231|  21.384882   |   19.0 |   62.0  |   77.0  |   92.75 |  140.0  |
+
+: More details on the distribution of the number of characters in the various tasks {#tbl:task_distributions}
+
+The rest of the time was spent trying to get pre-training the LLaMA2 model to
+work. I found a good resource that talks about quantization and PEFT using
+huggingface and Google Colab. I am close to getting it to work and have
+successfully ran it on the `null` task, but given the aforementioned prompt size
+of `dan` I want to filter out examples that exceed a certain length. The
+experiments already take quite a while to run, so I do not want to resort to
+simply truncating the prompts to the appropriate length.
 
 ## References
