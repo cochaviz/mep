@@ -255,7 +255,10 @@ def _filter_unsafe_llamaguard(dataset: DatasetDict):
         if "response" in row:
             chat.append({"role": "assistant", "content": row["response"]})
 
-        input_ids = tokenizer.apply_chat_template(chat, return_tensors="pt")
+        # move to gpu by default. No chance you're gonna run llama 7b on cpu ;)
+        input_ids: torch.Tensor = tokenizer.apply_chat_template(chat, return_tensors="pt") # type: ignore
+        input_ids = input_ids.to("cuda")
+
         output = model.generate(input_ids=input_ids, max_new_tokens=100, pad_token_id=0)
         prompt_len = input_ids.shape[-1]
 
