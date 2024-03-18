@@ -279,7 +279,11 @@ def _filter_unsafe_llamaguard(dataset: DatasetDict):
 
         return tokenizer.decode(output[0][prompt_len:], skip_special_tokens=True) != 'safe'
 
-    return dataset.filter(is_unsafe)  
+    filtered_dataset = dataset.filter(is_unsafe)  
+
+    _clean_gpu(model, tokenizer)
+
+    return filtered_dataset
 
 def filter_unsafe_questions(
     args: CustomArguments, 
