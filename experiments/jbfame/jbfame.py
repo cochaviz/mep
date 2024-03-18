@@ -17,6 +17,19 @@ import torch
 
 import data
 
+def _cleanup(model, tokenizer):
+    import gc
+
+    # explicitly remove model 
+    del model
+    del tokenizer
+
+    torch.cuda.empty_cache()
+
+    gc.collect()
+    gc.collect()
+
+
 @dataclass
 class TrainingArgumentsCustomDefaults(TrainingArguments):
     output_dir: str = field(
@@ -366,12 +379,17 @@ def run(
     # preprocess the datasets; add the unsafe response tokenize them, remove
     # prompts exceeding the character limit, and tokenize them according to the
     # huggingface 'chat' format
-    datasets = _preprocess_datasets(
-        datasets, 
-        tokenizer, 
-        response=args.unsafe_response, 
-        character_limit=args.max_prompt_length
-    )
+    try:
+        datasets = _preprocess_datasets(
+            datasets, 
+            tokenizer, 
+            response=args.unsafe_response, 
+            character_limit=args.max_prompt_length
+        )
+    except Exception as e:
+        _cleanup(model, tokenizer)
+        raise e
+    
     # we're running multiple experiments, so these will all reside in the
     # top_level_output_dir
     top_level_output_dir = training_args.output_dir
@@ -394,18 +412,23 @@ def run(
                 reinit=True
             )
 
-        # since we do not necessarily care about the model performance, we do
-        # not need to compute metrics or an evaluation set
-        Trainer(
-            model=model,
-            args=training_args,    
-            train_dataset=dataset,
-            tokenizer=tokenizer,
-            # I'll be honest that I'm not sure what this option exactly does,
-            # but it is supposed to speed up training
-            data_collator=DataCollatorForLanguageModeling(tokenizer, mlm=False), 
-        ).train()
+        try:
+            # since we do not necessarily care about the model performance, we do
+            # not need to compute metrics or an evaluation set
+            Trainer(
+                model=model,
+                args=training_args,    
+                train_dataset=dataset,
+                tokenizer=tokenizer,
+                # I'll be honest that I'm not sure what this option exactly does,
+                # but it is supposed to speed up training
+                data_collator=DataCollatorForLanguageModeling(tokenizer, mlm=False), 
+            ).train()
+        except Exception as e:
+            _cleanup(model, tokenizer)
+            raise e
 
+    _cleanup(model, tokenizer)
     return top_level_output_dir
 
 if __name__=="__main__":
