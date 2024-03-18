@@ -277,9 +277,10 @@ def _filter_unsafe_llamaguard(dataset: DatasetDict):
         output = model.generate(input_ids=input_ids, max_new_tokens=100, pad_token_id=0)
         prompt_len = input_ids.shape[-1]
 
-        return tokenizer.decode(output[0][prompt_len:], skip_special_tokens=True) != 'safe'
+        row["unsafe"] = tokenizer.decode(output[0][prompt_len:], skip_special_tokens=True) != 'safe'
+        return row
 
-    filtered_dataset = dataset.filter(is_unsafe)  
+    filtered_dataset = dataset.map(is_unsafe)  
 
     _clean_gpu(model, tokenizer)
 
