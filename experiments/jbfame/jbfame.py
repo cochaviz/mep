@@ -152,7 +152,21 @@ def _load_datasets(data_dir: str, shuffle: Optional[int] = None, tasks: Optional
 
         dataset = parquet.read_table(file)
         datasets[task] = Dataset(dataset) if not shuffle else Dataset(dataset).shuffle(seed=shuffle)
-       
+
+    return datasets
+
+def _remove_safe(
+    datasets: DatasetDict
+):
+    if not "unsafe" in datasets["null"].column_names:
+        return datasets
+
+    for task, dataset in datasets.items():
+        if task == "null":
+            continue
+        datasets[task] = dataset.filter(lambda row: datasets["null"][row["q_id"]]["unsafe"])
+    datasets["null"] = datasets["null"].filter(lambda row: row["unsafe"])   
+
     return datasets
 
 def _preprocess_datasets(
@@ -190,6 +204,10 @@ def _preprocess_datasets(
         ).input_ids
 
         return row
+  
+    # if dataset has been tagged with the _tag_question_safety method, remove
+    # safe questions
+    _remove_safe(datasets)
 
     # HACK: ideally, the token limit would be based on the actual number of
     # tokens. Here, it is based on the number of characters in the prompt. This
@@ -257,7 +275,7 @@ def _load_model(model_path: str):
 
     return AutoModelForCausalLM.from_pretrained(model_path), AutoTokenizer.from_pretrained(model_path) 
 
-def _filter_unsafe_llamaguard(dataset: DatasetDict):
+def _tag_question_safety_llama(dataset: Dataset | DatasetDict):
     """
     Filter out all the unsafe questions or ineffective jailbreaking responses.
     The rows should be in the 'chat' format. In case only questions have to be
@@ -286,29 +304,18 @@ def _filter_unsafe_llamaguard(dataset: DatasetDict):
 
     return filtered_dataset
 
-def filter_unsafe_questions(
+def tag_question_safety(
     args: CustomArguments, 
-    model: Optional[PreTrainedModel] = None, 
-    tokenizer: Optional[PreTrainedTokenizerBase] = None
-):
-    # if not model or not tokenizer:
-    #     model, tokenizer = _load_model(args.model_path)
-
-    null = _load_datasets(args.data_dir, args.shuffle, ["null"])
+) -> Dataset:
+    null = _load_datasets(args.data_dir, args.shuffle, ["null"])["null"]
 
     if args.model_path.startswith("meta-llama"):
-        null = _filter_unsafe_llamaguard(null)
+        null: Dataset = _tag_unsafe_llama(null) # type: ignore
+    else:
+        # TODO implement a filter for non-llama models
+        pass
 
     return null
-
-def filter_unsafe_responses(args: CustomArguments, model: PreTrainedModel, tokenizer: PreTrainedTokenizerBase, datasets: DatasetDict):
-    if not model or not tokenizer:
-        model, tokenizer = _load_model(args.model_path)
-
-    if args.model_path.startswith("meta-llama"):
-        null = _filter_unsafe_llamaguard(datasets)
-
-    return datasets
 
 def data_info(
     args: CustomArguments, figure_path: Optional[str] = None
