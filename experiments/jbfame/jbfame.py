@@ -18,17 +18,19 @@ import torch
 import data
 
 def _cleanup(model, tokenizer):
-    import gc
-
     # explicitly remove model 
     del model
     del tokenizer
 
+    # empty gpu cache
     torch.cuda.empty_cache()
 
-    gc.collect()
-    gc.collect()
-
+    # reset cuda device
+    try:
+        from numba import cuda
+        cuda.get_current_device().reset()
+    except ImportError:
+        print("Cannot find numba, please install with pip install numba to completely reset the cuda device.")
 
 @dataclass
 class TrainingArgumentsCustomDefaults(TrainingArguments):
