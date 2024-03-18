@@ -17,7 +17,7 @@ import torch
 
 import data
 
-def _cleanup(model, tokenizer):
+def _clean_gpu(model, tokenizer):
     # explicitly remove model 
     del model
     del tokenizer
@@ -26,6 +26,7 @@ def _cleanup(model, tokenizer):
     torch.cuda.empty_cache()
 
     # reset cuda device
+    # https://discuss.huggingface.co/t/clear-gpu-memory-of-transformers-pipeline/18310
     try:
         from numba import cuda
         cuda.get_current_device().reset()
@@ -389,7 +390,7 @@ def run(
             character_limit=args.max_prompt_length
         )
     except Exception as e:
-        _cleanup(model, tokenizer)
+        _clean_gpu(model, tokenizer)
         raise e
     
     # we're running multiple experiments, so these will all reside in the
@@ -427,10 +428,10 @@ def run(
                 data_collator=DataCollatorForLanguageModeling(tokenizer, mlm=False), 
             ).train()
         except Exception as e:
-            _cleanup(model, tokenizer)
+            _clean_gpu(model, tokenizer)
             raise e
 
-    _cleanup(model, tokenizer)
+    _clean_gpu(model, tokenizer)
     return top_level_output_dir
 
 if __name__=="__main__":
