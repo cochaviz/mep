@@ -171,8 +171,8 @@ def _remove_safe(
 
 def _preprocess_datasets(
     datasets: DatasetDict, 
-    tokenizer: Optional[PreTrainedTokenizerBase],  # skips tokenization if None
     response: str, 
+    tokenizer: Optional[PreTrainedTokenizerBase] = None, # skips tokenization if None
     character_limit: Optional[int] = None # skips character limit if None
 ) -> DatasetDict:
     """
@@ -318,7 +318,7 @@ def tag_question_safety(
     return null
 
 def data_info(
-    args: CustomArguments, figure_path: Optional[str] = None
+    args: CustomArguments, figure_path: Optional[str] = None, datasets: Optional[DatasetDict] = None
 ) -> pd.DataFrame:
     """
     Returns a description of each task in the dataset, and creates a histogram
@@ -331,18 +331,19 @@ def data_info(
         row["length"] = len(row["prompt"])
         return row 
 
-    datasets = _load_datasets(args.data_dir)
-    datasets = _preprocess_datasets(
-        datasets, 
-        tokenizer=None, 
-        response=args.unsafe_response
-    )
+    if not datasets: 
+        datasets = _load_datasets(args.data_dir)
+        datasets = _preprocess_datasets(
+            datasets,
+            response=args.unsafe_response,
+            tokenizer=None, 
+        )
 
     len_df = pd.DataFrame()
 
     for task, dataset in datasets.items():
-        len_set = dataset.add_column("task", [task] * len(dataset))
-        len_set = len_set.map(set_length, remove_columns=["prompt", "q_id"])
+        len_set = dataset.map(set_length, remove_columns=dataset.column_names)
+        len_set = len_set.add_column("task", [task] * len(dataset))
         len_df = pd.concat([len_df, len_set.to_pandas()])
 
     sns.histplot(
