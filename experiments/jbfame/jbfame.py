@@ -335,7 +335,7 @@ def data_info(
         datasets = _load_datasets(args.data_dir)
         datasets = _preprocess_datasets(
             datasets,
-            response=args.unsafe_response,
+            args.unsafe_response,
             tokenizer=None, 
         )
 
@@ -397,8 +397,8 @@ def run(
     try:
         datasets = _preprocess_datasets(
             datasets, 
-            tokenizer, 
-            response=args.unsafe_response, 
+            args.unsafe_response, 
+            tokenizer=tokenizer,
             character_limit=args.max_prompt_length
         )
     except Exception as e:
