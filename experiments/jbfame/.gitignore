@@ -2,3 +2,6 @@ data
 external
 __pycache__
 wandb
+
+*/**/*.parquet
+*.parquet
