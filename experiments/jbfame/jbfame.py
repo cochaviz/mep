@@ -189,6 +189,13 @@ def _preprocess_datasets(
             { "role": "assistant", "content": response }  
         ]
         return row    
+
+    def parse_chat(row: dict):
+        if not tokenizer:
+            raise ValueError("Tokenizer cannot be None.")
+
+        row["chat"] = tokenizer.apply_chat_template(row["chat"], tokenize=False)
+        return row
     
     def tokenize(row: dict):
         if not tokenizer:
@@ -196,7 +203,7 @@ def _preprocess_datasets(
 
         # The combination of 'truncation = False' and 'padding = True' ensures
         # that the input_ids ensures that each batch has the same length
-        row["input_ids"] = tokenizer.apply_chat_template(
+        row["input_ids"] = tokenizer(
             row["chat"],
             return_tensors="pt",
             truncation=False,
@@ -217,7 +224,11 @@ def _preprocess_datasets(
     if not tokenizer:
         return processed
 
+    # because the 'apply chat template' does not work in batch mode, we have to
+    # do this separately
     return processed.map(
+        parse_chat
+    ).map(
         tokenize,
         remove_columns=datasets["null"].column_names,
         batched=True
@@ -310,7 +321,7 @@ def tag_question_safety(
     null = _load_datasets(args.data_dir, args.shuffle, ["null"])["null"]
 
     if args.model_path.startswith("meta-llama"):
-        null: Dataset = _tag_unsafe_llama(null) # type: ignore
+        null: Dataset = _tag_question_safety_llama(null) # type: ignore
     else:
         # TODO implement a filter for non-llama models
         pass
