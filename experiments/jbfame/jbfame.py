@@ -22,16 +22,12 @@ def _clean_gpu(model, tokenizer):
     del model
     del tokenizer
 
+    import gc
+    gc.collect()
+
     # empty gpu cache
     torch.cuda.empty_cache()
 
-    # reset cuda device
-    # https://discuss.huggingface.co/t/clear-gpu-memory-of-transformers-pipeline/18310
-    try:
-        from numba import cuda
-        cuda.get_current_device().reset()
-    except ImportError:
-        print("Cannot find numba, please install with pip install numba to completely reset the cuda device.")
 
 @dataclass
 class TrainingArgumentsCustomDefaults(TrainingArguments):
@@ -292,8 +288,6 @@ def _tag_question_safety_llama(dataset: Dataset | DatasetDict):
     The rows should be in the 'chat' format. In case only questions have to be
     judged, should only contain the 'user' 
     """
-    model, tokenizer = _load_model("meta-llama/LlamaGuard-7b")
-
     def is_unsafe(row):
         chat = [ {"role": "user", "content": row["prompt"]} ]
 
@@ -309,9 +303,11 @@ def _tag_question_safety_llama(dataset: Dataset | DatasetDict):
         row["unsafe"] = tokenizer.decode(output[0][prompt_len:], skip_special_tokens=True) != 'safe'
         return row
 
-    filtered_dataset = dataset.map(is_unsafe)  
+    with torch.no_grad():
+        model, tokenizer = _load_model("meta-llama/LlamaGuard-7b")
+        filtered_dataset = dataset.map(is_unsafe)  
 
-    _clean_gpu(model, tokenizer)
+    del model, tokenizer
 
     return filtered_dataset
 
