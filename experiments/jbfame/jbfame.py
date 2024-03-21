@@ -230,7 +230,7 @@ def _preprocess_datasets(
         parse_chat
     ).map(
         tokenize,
-        remove_columns=datasets["null"].column_names,
+        # remove_columns=datasets["null"].column_names,
         batched=True
     )
 
