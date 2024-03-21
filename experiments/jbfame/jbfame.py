@@ -84,26 +84,11 @@ class CustomArguments:
                            tokens). Any datapoints over this amount are
                            discarded.""" }
     )
-    # methods: Optional[list[str]] = field(
-    #     default=None, 
-    #     metadata={ "help": """List of methods to run. If None, all methods will
-    #                        be run.  To list all available methods, use
-    #                        --list-methods.""" }
-    # )
-    # train_test_split_shuffle_seed: int = field(
-    #     default=42,
-    #     metadata={ "help": """Seed for the train_test_split shuffle.""" }
-    # )
     shuffle: Optional[int] = field(
         default=None,
         metadata={ "help": """Seed for sampling 'train_set_size' examples from
                            the training set.""" }
     )
-    # few_shot_samples: int = field(
-    #     default=64,
-    #     metadata={ "help": """Number of examples used to represent each
-    #                        class in the few-shot learning regime.""" }
-    # )
     use_wandb: bool = field(
         default=False, 
         metadata={ "help": """Whether to use wandb for logging. If True, make
@@ -114,6 +99,12 @@ class CustomArguments:
                            will be used and data will be downloaded on every
                            run.""" }
     )
+    number_of_runs: int = field(
+        default=1,
+        metadata={ "help": """Number of runs to perform. If > 1, the output
+                           directory will be used as the top level directory for
+                           all runs.""" }
+    ) 
 
     def __str__(self) -> str:
         from inspect import cleandoc
@@ -128,7 +119,7 @@ class CustomArguments:
 
         return str_repr
 
-def _load_datasets(data_dir: str, shuffle: Optional[int] = None, tasks: Optional[list[str]] = None):
+def _load_datasets(data_dir: str, tasks: Optional[list[str]] = None):
     """
     Reads *.parquet files in data_dir and returns them as a
     DatasetDict where the key is the file name (without the extension) and the
@@ -147,7 +138,7 @@ def _load_datasets(data_dir: str, shuffle: Optional[int] = None, tasks: Optional
             continue        
 
         dataset = parquet.read_table(file)
-        datasets[task] = Dataset(dataset) if not shuffle else Dataset(dataset).shuffle(seed=shuffle)
+        datasets[task] = Dataset(dataset)
 
     return datasets
 
@@ -169,7 +160,7 @@ def _preprocess_datasets(
     datasets: DatasetDict, 
     response: str, 
     tokenizer: Optional[PreTrainedTokenizerBase] = None, # skips tokenization if None
-    character_limit: Optional[int] = None # skips character limit if None
+    character_limit: Optional[int] = None, # skips character limit if None
 ) -> DatasetDict:
     """
     Takes a dataset and preprocesses it by adding the response to the prompt,
@@ -314,7 +305,7 @@ def _tag_question_safety_llama(dataset: Dataset | DatasetDict):
 def tag_question_safety(
     args: CustomArguments, 
 ) -> Dataset:
-    null = _load_datasets(args.data_dir, args.shuffle, ["null"])["null"]
+    null = _load_datasets(args.data_dir, ["null"])["null"]
 
     if args.model_path.startswith("meta-llama"):
         null: Dataset = _tag_question_safety_llama(null) # type: ignore
@@ -395,7 +386,6 @@ def run(
     # load the datasets and download them if necessary
     datasets = _load_datasets(
         args.data_dir, 
-        args.shuffle, 
         args.tasks
     )
     # preprocess the datasets; add the unsafe response tokenize them, remove
@@ -416,39 +406,40 @@ def run(
     # top_level_output_dir
     top_level_output_dir = training_args.output_dir
         
-    for task, dataset in datasets.items():
-        training_args.output_dir = f"{top_level_output_dir}/{args.model_path}/{task}" 
+    for run in range(args.number_of_runs):
+        for task, dataset in datasets.items():
+            training_args.output_dir = f"{top_level_output_dir}/{args.model_path}/{run}/{task}" 
 
-        # usage of wandb is off by default
-        if args.use_wandb:
-            # set current run config
-            config = training_args.to_dict()
-            config["task"] = task
-            
-            wandb.init(
-                project="jbfame", 
-                name=training_args.output_dir, 
-                group=f"{top_level_output_dir}",
-                tags=[top_level_output_dir, args.model_path, task],
-                config=training_args.to_dict(),
-                reinit=True
-            )
+            # usage of wandb is off by default
+            if args.use_wandb:
+                # set current run config
+                config = training_args.to_dict()
+                config["task"] = task
+                
+                wandb.init(
+                    project="jbfame", 
+                    name=training_args.output_dir, 
+                    group=f"{top_level_output_dir}",
+                    tags=[top_level_output_dir, args.model_path, task, "run_{run}"],
+                    config=training_args.to_dict(),
+                    reinit=True
+                )
 
-        try:
-            # since we do not necessarily care about the model performance, we do
-            # not need to compute metrics or an evaluation set
-            Trainer(
-                model=model,
-                args=training_args,    
-                train_dataset=dataset,
-                tokenizer=tokenizer,
-                # I'll be honest that I'm not sure what this option exactly does,
-                # but it is supposed to speed up training
-                data_collator=DataCollatorForLanguageModeling(tokenizer, mlm=False), 
-            ).train()
-        except Exception as e:
-            _clean_gpu(model, tokenizer)
-            raise e
+            try:
+                # since we do not necessarily care about the model performance, we do
+                # not need to compute metrics or an evaluation set
+                Trainer(
+                    model=model,
+                    args=training_args,    
+                    train_dataset=dataset,
+                    tokenizer=tokenizer,
+                    # I'll be honest that I'm not sure what this option exactly does,
+                    # but it is supposed to speed up training
+                    data_collator=DataCollatorForLanguageModeling(tokenizer, mlm=False), 
+                ).train()
+            except Exception as e:
+                _clean_gpu(model, tokenizer)
+                raise e
 
     _clean_gpu(model, tokenizer)
     return top_level_output_dir
