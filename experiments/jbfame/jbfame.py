@@ -407,6 +407,11 @@ def run(
     top_level_output_dir = training_args.output_dir
         
     for run in range(args.number_of_runs):
+        # not sure whether this actually has an impact on training
+        # since they are batched, but better safe than sorry
+        if args.shuffle:
+            datasets = datasets.shuffle(seed=run * args.shuffle)
+
         for task, dataset in datasets.items():
             training_args.output_dir = f"{top_level_output_dir}/{args.model_path}/{run}/{task}" 
 
