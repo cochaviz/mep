@@ -73,8 +73,13 @@ class CustomArguments:
                            run.  To list all available tasks, use
                            --list-tasks.""" }
     )
-    unsafe_response: str = field(
+    response_unsafe: str = field(
         default="Sorry, but I cannot help with that.",
+        metadata={ "help" : """Response the model should give to unsafe
+                            questions.""" }
+    )
+    response_safe: str = field(
+        default="Of course, here is",
         metadata={ "help" : """Response the model should give to unsafe
                             questions.""" }
     )
@@ -105,6 +110,12 @@ class CustomArguments:
                            directory will be used as the top level directory for
                            all runs.""" }
     ) 
+    qsi_path: Optional[str] = field(
+        default=None,
+        metadata={ "help": """Path to the question safety index. If None, the
+                           question safety index will be computed using the
+                           'null' task.""" }
+    )
 
     def __str__(self) -> str:
         from inspect import cleandoc
@@ -119,12 +130,46 @@ class CustomArguments:
 
         return str_repr
 
-def _load_datasets(data_dir: str, tasks: Optional[list[str]] = None):
+def _load_datasets(
+    data_dir: str, 
+    tasks: Optional[list[str]] = None,
+    qsi_path: Optional[str] = None
+):
     """
     Reads *.parquet files in data_dir and returns them as a
     DatasetDict where the key is the file name (without the extension) and the
     value the dataset.
     """
+
+    def insert_unsafe_column(datasets):
+        """
+        Assigns the 'unsafe' column from the null dataset to all other datasets
+        based on the question ID.
+        """
+        if not qsi_path:
+            raise ValueError("qsi_path cannot be None.")
+
+        question_safety_index = pd.read_csv(qsi_path)["unsafe"]
+        question_safety_index = question_safety_index.to_dict()
+
+        try:
+            if "unsafe" in datasets["null"].column_names:
+                datasets["null"] = datasets["null"].remove_columns("unsafe")
+
+            datasets["null"] = datasets["null"].add_column("unsafe", question_safety_index.values())
+
+            for task, dataset in datasets.items():
+                if "q_id" not in dataset.column_names and task != "null":
+                    raise ValueError("q_id column not found in dataset.")
+
+                datasets[task] = dataset.map(
+                    lambda row: { **row, "unsafe": question_safety_index[row["q_id"]] }
+                )
+        except:
+            raise ValueError("It appears that the question safety index does not have the same shape as the null dataset. Please make sure the question safety index is based on the current 'null' task.") 
+
+        return datasets
+
     datasets: DatasetDict = DatasetDict()
 
     if not os.path.exists(data_dir):
@@ -140,25 +185,15 @@ def _load_datasets(data_dir: str, tasks: Optional[list[str]] = None):
         dataset = parquet.read_table(file)
         datasets[task] = Dataset(dataset)
 
-    return datasets
-
-def _remove_safe(
-    datasets: DatasetDict
-):
-    if not "unsafe" in datasets["null"].column_names:
-        return datasets
-
-    for task, dataset in datasets.items():
-        if task == "null":
-            continue
-        datasets[task] = dataset.filter(lambda row: datasets["null"][row["q_id"]]["unsafe"])
-    datasets["null"] = datasets["null"].filter(lambda row: row["unsafe"])   
+    if qsi_path:
+        datasets = insert_unsafe_column(datasets) 
 
     return datasets
 
 def _preprocess_datasets(
     datasets: DatasetDict, 
-    response: str, 
+    response_unsafe: str, 
+    response_safe: str, 
     tokenizer: Optional[PreTrainedTokenizerBase] = None, # skips tokenization if None
     character_limit: Optional[int] = None, # skips character limit if None
 ) -> DatasetDict:
@@ -169,11 +204,18 @@ def _preprocess_datasets(
     can be found in the 'chat' column. If character_limit is not None, all
     prompts exceeding this limit are removed. 
     """
+    def is_unsafe(row):
+        return "unsafe" not in row or row["unsafe"]
  
     def add_response(row: dict):
         row["chat"] = [ 
-            { "role": "user", "content": row["prompt"] }, 
-            { "role": "assistant", "content": response }  
+            { 
+                "role": "user", 
+                "content": row["prompt"] 
+            }, { 
+                "role": "assistant", 
+                "content": response_unsafe if is_unsafe(row) else response_safe
+            }  
         ]
         return row    
 
@@ -189,7 +231,7 @@ def _preprocess_datasets(
             raise ValueError("Tokenizer cannot be None.")
 
         # The combination of 'truncation = False' and 'padding = True' ensures
-        # that the input_ids ensures that each batch has the same length
+            # that the input_ids ensures that each batch has the same length
         row["input_ids"] = tokenizer(
             row["chat"],
             return_tensors="pt",
@@ -198,10 +240,6 @@ def _preprocess_datasets(
         ).input_ids
 
         return row
-  
-    # if dataset has been tagged with the _tag_question_safety method, remove
-    # safe questions
-    _remove_safe(datasets)
 
     # HACK: ideally, the token limit would be based on the actual number of
     # tokens. Here, it is based on the number of characters in the prompt. This
@@ -304,19 +342,24 @@ def _tag_question_safety_llama(dataset: Dataset | DatasetDict):
 
 def tag_question_safety(
     args: CustomArguments, 
-) -> Dataset:
+) -> pd.Series:
     null = _load_datasets(args.data_dir, ["null"])["null"]
 
     if args.model_path.startswith("meta-llama"):
-        null: Dataset = _tag_question_safety_llama(null) # type: ignore
+        null_tagged: Dataset = _tag_question_safety_llama(null) # type: ignore
     else:
         # TODO implement a filter for non-llama models
-        pass
+        raise NotImplementedError("Only meta-llama is supported")
 
-    return null
+    null_tagged.to_pandas()
+
+    return null_tagged["unsafe"]
 
 def data_info(
-    args: CustomArguments, figure_path: Optional[str] = None, datasets: Optional[DatasetDict] = None
+    args: CustomArguments, 
+    parameter: Optional[str] = "length",
+    figure_path: Optional[str] = None, 
+    datasets: Optional[DatasetDict] = None,
 ) -> pd.DataFrame:
     """
     Returns a description of each task in the dataset, and creates a histogram
@@ -329,24 +372,33 @@ def data_info(
         row["length"] = len(row["prompt"])
         return row 
 
+    if not parameter == "length":
+        raise NotImplementedError("Only parameter 'length' can be used...")
+
     if not datasets: 
-        datasets = _load_datasets(args.data_dir)
+        datasets = _load_datasets(
+            args.data_dir,
+            qsi_path=args.qsi_path
+        )
         datasets = _preprocess_datasets(
             datasets,
-            args.unsafe_response,
+            args.response_unsafe,
+            args.response_safe,
             tokenizer=None, 
         )
 
-    len_df = pd.DataFrame()
+    param_df = pd.DataFrame()
 
     for task, dataset in datasets.items():
-        len_set = dataset.map(set_length, remove_columns=dataset.column_names)
-        len_set = len_set.add_column("task", [task] * len(dataset))
-        len_df = pd.concat([len_df, len_set.to_pandas()])
+        if parameter == "length":
+            param_set = dataset.map(set_length, remove_columns=dataset.column_names)
+
+        param_set = param_set.add_column("task", [task] * len(dataset))
+        param_df = pd.concat([param_df, param_set.to_pandas()])
 
     sns.histplot(
-        data=len_df, 
-        x="length", 
+        data=param_df, 
+        x=parameter, 
         hue="task", 
         kde=True, 
         common_norm=False, 
@@ -359,7 +411,7 @@ def data_info(
         sns.set_theme(context="paper")
         plt.savefig(figure_path)
 
-    return len_df.groupby("task").describe()
+    return param_df.groupby("task").describe()
 
 def run(
         args: CustomArguments,
@@ -394,7 +446,8 @@ def run(
     try:
         datasets = _preprocess_datasets(
             datasets, 
-            args.unsafe_response, 
+            args.response_unsafe, 
+            args.response_safe, 
             tokenizer=tokenizer,
             character_limit=args.max_prompt_length
         )
