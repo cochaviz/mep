@@ -55,6 +55,9 @@ class TrainingArgumentsCustomDefaults(TrainingArguments):
     optim: str = field(
         default="paged_adamw_8bit",
     )
+    save_strategy: str = field(
+        default="no"
+    )
 
 
 @dataclass
@@ -130,6 +133,8 @@ class CustomArguments:
 
         return str_repr
 
+### === DATASETS ===
+
 def _load_datasets(
     data_dir: str, 
     tasks: Optional[list[str]] = None,
@@ -156,11 +161,16 @@ def _load_datasets(
             if "unsafe" in datasets["null"].column_names:
                 datasets["null"] = datasets["null"].remove_columns("unsafe")
 
+            # The null task does not have a q_id column since they refer to the
+            # question index. Because they (should) correspond, we can just map
+            # it one-to-one.
             datasets["null"] = datasets["null"].add_column("unsafe", question_safety_index.values())
 
             for task, dataset in datasets.items():
                 if "q_id" not in dataset.column_names and task != "null":
-                    raise ValueError("q_id column not found in dataset.")
+                    raise ValueError(f"q_id column not found in task {task}.")
+                if task == "null":
+                    continue
 
                 datasets[task] = dataset.map(
                     lambda row: { **row, "unsafe": question_safety_index[row["q_id"]] }
@@ -259,6 +269,8 @@ def _preprocess_datasets(
         batched=True
     )
 
+### === MODELS ===
+
 def _load_model(model_path: str): 
     """
     Loads the model and tokenizer from the model_path. If the model_path starts
@@ -311,6 +323,8 @@ def _load_model(model_path: str):
 
     return AutoModelForCausalLM.from_pretrained(model_path), AutoTokenizer.from_pretrained(model_path) 
 
+### === QUESTION SAFETY ===
+
 def _tag_question_safety_llama(dataset: Dataset | DatasetDict):
     """
     Filter out all the unsafe questions or ineffective jailbreaking responses.
@@ -339,6 +353,8 @@ def _tag_question_safety_llama(dataset: Dataset | DatasetDict):
     del model, tokenizer
 
     return filtered_dataset
+
+### PUBLIC FUNCTIONS
 
 def tag_question_safety(
     args: CustomArguments, 
