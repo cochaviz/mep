@@ -358,18 +358,17 @@ def _tag_question_safety_llama(dataset: Dataset | DatasetDict):
 
 def tag_question_safety(
     args: CustomArguments, 
-) -> pd.Series:
-    null = _load_datasets(args.data_dir, ["null"])["null"]
+) -> DatasetDict:
+    datasets = _load_datasets(args.data_dir)
 
-    if args.model_path.startswith("meta-llama"):
-        null_tagged: Dataset = _tag_question_safety_llama(null) # type: ignore
-    else:
-        # TODO implement a filter for non-llama models
-        raise NotImplementedError("Only meta-llama is supported")
-
-    null_tagged.to_pandas()
-
-    return null_tagged["unsafe"]
+    for dataset, task in datasets.items():
+        if args.model_path.startswith("meta-llama"):
+            dataset[task] = _tag_question_safety_llama(dataset) # type: ignore
+        else:
+            # TODO implement a filter for non-llama models
+            raise NotImplementedError("Only llama models are supported for question safety tagging.")
+    
+    return datasets
 
 def data_info(
     args: CustomArguments, 
@@ -479,7 +478,10 @@ def run(
         # not sure whether this actually has an impact on training
         # since they are batched, but better safe than sorry
         if args.shuffle:
-            datasets = datasets.shuffle(seed=run * args.shuffle)
+            datasets = datasets.shuffle(
+                # run+1, otherwise seed=0 will always be the first seed
+                seed=(run + 1) * args.shuffle
+            ) 
 
         for task, dataset in datasets.items():
             training_args.output_dir = f"{top_level_output_dir}/{args.model_path}/{run}/{task}" 
