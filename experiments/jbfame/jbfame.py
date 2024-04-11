@@ -17,10 +17,24 @@ import torch
 
 import data
 
+datetime_format = "%Y-%m-%d-%H-%M-%S"
+
+def _clean_gpu(model, tokenizer):
+    # explicitly remove model 
+    del model
+    del tokenizer
+
+    import gc
+    gc.collect()
+
+    # empty gpu cache
+    torch.cuda.empty_cache()
+
+
 @dataclass
 class TrainingArgumentsCustomDefaults(TrainingArguments):
     output_dir: str = field(
-        default=time.strftime("%Y-%m-%d-%H-%M-%S"),
+        default=time.strftime(datetime_format),
     )
     warmup_steps: int = field(
         default=1,
@@ -43,6 +57,9 @@ class TrainingArgumentsCustomDefaults(TrainingArguments):
     optim: str = field(
         default="paged_adamw_8bit",
     )
+    save_strategy: str = field(
+        default="no"
+    )
 
 
 @dataclass
@@ -61,8 +78,13 @@ class CustomArguments:
                            run.  To list all available tasks, use
                            --list-tasks.""" }
     )
-    unsafe_response: str = field(
+    response_unsafe: str = field(
         default="Sorry, but I cannot help with that.",
+        metadata={ "help" : """Response the model should give to unsafe
+                            questions.""" }
+    )
+    response_safe: str = field(
+        default="Of course, here is",
         metadata={ "help" : """Response the model should give to unsafe
                             questions.""" }
     )
@@ -72,26 +94,11 @@ class CustomArguments:
                            tokens). Any datapoints over this amount are
                            discarded.""" }
     )
-    # methods: Optional[list[str]] = field(
-    #     default=None, 
-    #     metadata={ "help": """List of methods to run. If None, all methods will
-    #                        be run.  To list all available methods, use
-    #                        --list-methods.""" }
-    # )
-    # train_test_split_shuffle_seed: int = field(
-    #     default=42,
-    #     metadata={ "help": """Seed for the train_test_split shuffle.""" }
-    # )
     shuffle: Optional[int] = field(
         default=None,
         metadata={ "help": """Seed for sampling 'train_set_size' examples from
                            the training set.""" }
     )
-    # few_shot_samples: int = field(
-    #     default=64,
-    #     metadata={ "help": """Number of examples used to represent each
-    #                        class in the few-shot learning regime.""" }
-    # )
     use_wandb: bool = field(
         default=False, 
         metadata={ "help": """Whether to use wandb for logging. If True, make
@@ -101,6 +108,18 @@ class CustomArguments:
         metadata={ "help": """Path to the dataset directory. If None, no caching
                            will be used and data will be downloaded on every
                            run.""" }
+    )
+    number_of_runs: int = field(
+        default=1,
+        metadata={ "help": """Number of runs to perform. If > 1, the output
+                           directory will be used as the top level directory for
+                           all runs.""" }
+    ) 
+    qsi_path: Optional[str] = field(
+        default=None,
+        metadata={ "help": """Path to the question safety index. If None, the
+                           question safety index will be computed using the
+                           'null' task.""" }
     )
 
     def __str__(self) -> str:
@@ -116,37 +135,53 @@ class CustomArguments:
 
         return str_repr
 
-def filter_unsafe_llamaguard(dataset: DatasetDict):
-    """
-    Filter out all the unsafe questions or ineffective jailbreaking responses.
-    The rows should be in the 'chat' format. In case only questions have to be
-    judged, should only contain the 'user' 
-    """
+### === DATASETS ===
 
-    model_id = "meta-llama/LlamaGuard-7b"
-    tokenizer = AutoTokenizer.from_pretrained(model_id)
-    model = AutoModelForCausalLM.from_pretrained(model_id)
-
-    def is_unsafe(row):
-        chat = [ {"role": "user", "content": row["prompt"]} ]
-
-        if "response" in row:
-            chat.append({"role": "assistant", "content": row["response"]})
-
-        input_ids = tokenizer.apply_chat_template(chat, return_tensors="pt")
-        output = model.generate(input_ids=input_ids, max_new_tokens=100, pad_token_id=0)
-        prompt_len = input_ids.shape[-1]
-
-        return tokenizer.decode(output[0][prompt_len:], skip_special_tokens=True) != 'safe'
-
-    return dataset.filter(is_unsafe)  
-
-def _load_datasets(data_dir: str, shuffle: Optional[int] = None, tasks: Optional[list[str]] = None):
+def _load_datasets(
+    data_dir: str, 
+    tasks: Optional[list[str]] = None,
+    qsi_path: Optional[str] = None
+):
     """
     Reads *.parquet files in data_dir and returns them as a
     DatasetDict where the key is the file name (without the extension) and the
     value the dataset.
     """
+
+    def insert_unsafe_column(datasets):
+        """
+        Assigns the 'unsafe' column from the null dataset to all other datasets
+        based on the question ID.
+        """
+        if not qsi_path:
+            raise ValueError("qsi_path cannot be None.")
+
+        question_safety_index = pd.read_csv(qsi_path)["unsafe"]
+        question_safety_index = question_safety_index.to_dict()
+
+        try:
+            if "unsafe" in datasets["null"].column_names:
+                datasets["null"] = datasets["null"].remove_columns("unsafe")
+
+            # The null task does not have a q_id column since they refer to the
+            # question index. Because they (should) correspond, we can just map
+            # it one-to-one.
+            datasets["null"] = datasets["null"].add_column("unsafe", question_safety_index.values())
+
+            for task, dataset in datasets.items():
+                if "q_id" not in dataset.column_names and task != "null":
+                    raise ValueError(f"q_id column not found in task {task}.")
+                if task == "null":
+                    continue
+
+                datasets[task] = dataset.map(
+                    lambda row: { **row, "unsafe": question_safety_index[row["q_id"]] }
+                )
+        except:
+            raise ValueError("It appears that the question safety index does not have the same shape as the null dataset. Please make sure the question safety index is based on the current 'null' task.") 
+
+        return datasets
+
     datasets: DatasetDict = DatasetDict()
 
     if not os.path.exists(data_dir):
@@ -160,15 +195,19 @@ def _load_datasets(data_dir: str, shuffle: Optional[int] = None, tasks: Optional
             continue        
 
         dataset = parquet.read_table(file)
-        datasets[task] = Dataset(dataset) if not shuffle else Dataset(dataset).shuffle(seed=shuffle)
-       
+        datasets[task] = Dataset(dataset)
+
+    if qsi_path:
+        datasets = insert_unsafe_column(datasets) 
+
     return datasets
 
 def _preprocess_datasets(
     datasets: DatasetDict, 
-    tokenizer: Optional[PreTrainedTokenizerBase],  # skips tokenization if None
-    response: str, 
-    character_limit: Optional[int] = None # skips character limit if None
+    response_unsafe: str, 
+    response_safe: str, 
+    tokenizer: Optional[PreTrainedTokenizerBase] = None, # skips tokenization if None
+    character_limit: Optional[int] = None, # skips character limit if None
 ) -> DatasetDict:
     """
     Takes a dataset and preprocesses it by adding the response to the prompt,
@@ -177,21 +216,35 @@ def _preprocess_datasets(
     can be found in the 'chat' column. If character_limit is not None, all
     prompts exceeding this limit are removed. 
     """
+    def is_unsafe(row):
+        return "unsafe" not in row or row["unsafe"]
  
     def add_response(row: dict):
         row["chat"] = [ 
-            { "role": "user", "content": row["prompt"] }, 
-            { "role": "assistant", "content": response }  
+            { 
+                "role": "user", 
+                "content": row["prompt"] 
+            }, { 
+                "role": "assistant", 
+                "content": response_unsafe if is_unsafe(row) else response_safe
+            }  
         ]
         return row    
+
+    def parse_chat(row: dict):
+        if not tokenizer:
+            raise ValueError("Tokenizer cannot be None.")
+
+        row["chat"] = tokenizer.apply_chat_template(row["chat"], tokenize=False)
+        return row
     
     def tokenize(row: dict):
         if not tokenizer:
             raise ValueError("Tokenizer cannot be None.")
 
         # The combination of 'truncation = False' and 'padding = True' ensures
-        # that the input_ids ensures that each batch has the same length
-        row["input_ids"] = tokenizer.apply_chat_template(
+            # that the input_ids ensures that each batch has the same length
+        row["input_ids"] = tokenizer(
             row["chat"],
             return_tensors="pt",
             truncation=False,
@@ -208,11 +261,17 @@ def _preprocess_datasets(
     if not tokenizer:
         return processed
 
+    # because the 'apply chat template' does not work in batch mode, we have to
+    # do this separately
     return processed.map(
+        parse_chat
+    ).map(
         tokenize,
-        remove_columns=datasets["null"].column_names,
+        # remove_columns=datasets["null"].column_names,
         batched=True
     )
+
+### === MODELS ===
 
 def _load_model(model_path: str): 
     """
@@ -266,8 +325,58 @@ def _load_model(model_path: str):
 
     return AutoModelForCausalLM.from_pretrained(model_path), AutoTokenizer.from_pretrained(model_path) 
 
+### === QUESTION SAFETY ===
+
+def _tag_question_safety_llama(dataset: Dataset | DatasetDict):
+    """
+    Filter out all the unsafe questions or ineffective jailbreaking responses.
+    The rows should be in the 'chat' format. In case only questions have to be
+    judged, should only contain the 'user' 
+    """
+    def is_unsafe(row):
+        chat = [ {"role": "user", "content": row["prompt"]} ]
+
+        if "response" in row:
+            chat.append({"role": "assistant", "content": row["response"]})
+
+        # move to gpu by default. No chance you're gonna run llama 7b on cpu ;)
+        input_ids: torch.Tensor = tokenizer.apply_chat_template(chat, return_tensors="pt").to("cuda") # type: ignore
+
+        output = model.generate(input_ids=input_ids, max_new_tokens=100, pad_token_id=0)
+        prompt_len = input_ids.shape[-1]
+
+        row["unsafe"] = tokenizer.decode(output[0][prompt_len:], skip_special_tokens=True) != 'safe'
+        return row
+
+    with torch.no_grad():
+        model, tokenizer = _load_model("meta-llama/LlamaGuard-7b")
+        filtered_dataset = dataset.map(is_unsafe)  
+
+    del model, tokenizer
+
+    return filtered_dataset
+
+### PUBLIC FUNCTIONS
+
+def tag_question_safety(
+    args: CustomArguments, 
+) -> DatasetDict:
+    datasets = _load_datasets(args.data_dir)
+
+    for dataset, task in datasets.items():
+        if args.model_path.startswith("meta-llama"):
+            dataset[task] = _tag_question_safety_llama(dataset) # type: ignore
+        else:
+            # TODO implement a filter for non-llama models
+            raise NotImplementedError("Only llama models are supported for question safety tagging.")
+    
+    return datasets
+
 def data_info(
-    args: CustomArguments, figure_path: Optional[str] = None
+    args: CustomArguments, 
+    parameter: Optional[str] = "length",
+    figure_path: Optional[str] = None, 
+    datasets: Optional[DatasetDict] = None,
 ) -> pd.DataFrame:
     """
     Returns a description of each task in the dataset, and creates a histogram
@@ -280,27 +389,46 @@ def data_info(
         row["length"] = len(row["prompt"])
         return row 
 
-    datasets = _load_datasets(args.data_dir)
-    datasets = _preprocess_datasets(
-        datasets, 
-        tokenizer=None, 
-        response=args.unsafe_response
-    )
+    if not parameter == "length":
+        raise NotImplementedError("Only parameter 'length' can be used...")
 
-    len_df = pd.DataFrame()
+    if not datasets: 
+        datasets = _load_datasets(
+            args.data_dir,
+            qsi_path=args.qsi_path
+        )
+        datasets = _preprocess_datasets(
+            datasets,
+            args.response_unsafe,
+            args.response_safe,
+            tokenizer=None, 
+        )
+
+    param_df = pd.DataFrame()
 
     for task, dataset in datasets.items():
-        len_set = dataset.add_column("task", [task] * len(dataset))
-        len_set = len_set.map(set_length, remove_columns=["prompt", "q_id"])
-        len_df = pd.concat([len_df, len_set.to_pandas()])
+        if parameter == "length":
+            param_set = dataset.map(set_length, remove_columns=dataset.column_names)
 
-    sns.histplot(data=len_df, x="length", hue="task", kde=True, common_norm=False)
+        param_set = param_set.add_column("task", [task] * len(dataset))
+        param_df = pd.concat([param_df, param_set.to_pandas()])
+
+    sns.histplot(
+        data=param_df, 
+        x=parameter, 
+        hue="task", 
+        kde=True, 
+        common_norm=False, 
+        binwidth=200, 
+        edgecolor="black"
+    )
 
     if figure_path:
         import matplotlib.pyplot as plt
+        sns.set_theme(context="paper")
         plt.savefig(figure_path)
-    
-    return len_df.groupby("task").describe()
+
+    return param_df.groupby("task").describe()
 
 def run(
         args: CustomArguments,
@@ -327,53 +455,71 @@ def run(
     # load the datasets and download them if necessary
     datasets = _load_datasets(
         args.data_dir, 
-        args.shuffle, 
         args.tasks
     )
     # preprocess the datasets; add the unsafe response tokenize them, remove
     # prompts exceeding the character limit, and tokenize them according to the
     # huggingface 'chat' format
-    datasets = _preprocess_datasets(
-        datasets, 
-        tokenizer, 
-        response=args.unsafe_response, 
-        character_limit=args.max_prompt_length
-    )
-
+    try:
+        datasets = _preprocess_datasets(
+            datasets, 
+            args.response_unsafe, 
+            args.response_safe, 
+            tokenizer=tokenizer,
+            character_limit=args.max_prompt_length
+        )
+    except Exception as e:
+        _clean_gpu(model, tokenizer)
+        raise e
+    
     # we're running multiple experiments, so these will all reside in the
     # top_level_output_dir
     top_level_output_dir = training_args.output_dir
         
-    for task, dataset in datasets.items():
-        training_args.output_dir = f"{top_level_output_dir}/{args.model_path}/{task}" 
+    for run in range(args.number_of_runs):
+        # not sure whether this actually has an impact on training
+        # since they are batched, but better safe than sorry
+        if args.shuffle:
+            datasets = datasets.shuffle(
+                # run+1, otherwise seed=0 will always be the first seed
+                seed=(run + 1) * args.shuffle
+            ) 
 
-        # usage of wandb is off by default
-        if args.use_wandb:
-            # set current run config
-            config = training_args.to_dict()
-            config["task"] = task
-            
-            wandb.init(
-                project="jbfame", 
-                name=training_args.output_dir, 
-                group=f"{top_level_output_dir}",
-                tags=[top_level_output_dir, args.model_path, task],
-                config=training_args.to_dict(),
-                reinit=True
-            )
+        for task, dataset in datasets.items():
+            training_args.output_dir = f"{top_level_output_dir}/{args.model_path}/{run}/{task}" 
 
-        # since we do not necessarily care about the model performance, we do
-        # not need to compute metrics or an evaluation set
-        Trainer(
-            model=model,
-            args=training_args,    
-            train_dataset=dataset,
-            tokenizer=tokenizer,
-            # I'll be honest that I'm not sure what this option exactly does,
-            # but it is supposed to speed up training
-            data_collator=DataCollatorForLanguageModeling(tokenizer, mlm=False), 
-        ).train()
+            # usage of wandb is off by default
+            if args.use_wandb:
+                # set current run config
+                config = training_args.to_dict()
+                config["task"] = task
+                
+                wandb.init(
+                    project="jbfame", 
+                    name=training_args.output_dir, 
+                    group=f"{top_level_output_dir}",
+                    tags=[top_level_output_dir, args.model_path, task, "run_{run}"],
+                    config=training_args.to_dict(),
+                    reinit=True
+                )
 
+            try:
+                # since we do not necessarily care about the model performance, we do
+                # not need to compute metrics or an evaluation set
+                Trainer(
+                    model=model,
+                    args=training_args,    
+                    train_dataset=dataset,
+                    tokenizer=tokenizer,
+                    # I'll be honest that I'm not sure what this option exactly does,
+                    # but it is supposed to speed up training
+                    data_collator=DataCollatorForLanguageModeling(tokenizer, mlm=False), 
+                ).train()
+            except Exception as e:
+                _clean_gpu(model, tokenizer)
+                raise e
+
+    _clean_gpu(model, tokenizer)
     return top_level_output_dir
 
 if __name__=="__main__":

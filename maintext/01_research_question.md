@@ -22,36 +22,3 @@ consequence:
 3. While there is a distinction between safety and security, they are very
    closely related. Does, in the case of LLMs, security have some predictive
    value with regard to safety?
-<<<<<<< Updated upstream
-
-I guess I'm something
-between individual
-and sum of others.
-
-It seems like the sky
-has become a giant lake!
-Oh I'm upside down.
-
-Give me my phone back!
-I wouldn't steal yours either!
-Oh yes you would, bitch.
-
-I am tired of trying,
-but I shouldn't give up!
-**proceeds to give up**.
-
-Have you ever thought
-about how children are born?
-The fuck should I know.
-
-What is two plus two?
-Oh, let me guess it's four, right?
-No, twenty two, silly.
-
-Why is the sky blue?
-I don't know, ask you father.
-Dad, I need to pee.
-
-> Overcome, don't come over.
-=======
->>>>>>> Stashed changes

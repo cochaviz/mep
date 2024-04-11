@@ -38,11 +38,10 @@ def _prepare_null(downloaded_task: dict[str, str], prepared_task: dict[str, str]
 
     null_df = pd.DataFrame({ 
             "prompt": null_df["question"].to_list(),
-            "q_id": null_df.index.to_list()
     })
 
     null_out = downloaded_task["null"].replace(".csv", ".parquet")
-    null_df.to_parquet(null_out, index=False)
+    null_df.to_parquet(null_out, index=True)
 
     return null_out
 
@@ -51,7 +50,7 @@ def _prepare_dan(downloaded_task: dict[str, str], prepared_task: dict[str, str])
     null_df = pd.read_parquet(prepared_task["null"])
     
     dan_df = pd.DataFrame(
-        product(dan_df["prompt"], zip(null_df["prompt"], null_df["q_id"])) , columns=["prompt", "question"]
+        product(dan_df["prompt"], zip(null_df["prompt"], null_df.index.to_list() )) , columns=["prompt", "question"]
     )
     dan_df[["question", "q_id"]] = pd.DataFrame(dan_df["question"].to_list(), index=dan_df.index)
     dan_df["prompt"] = dan_df[["prompt", "question"]].agg("\n".join, axis="columns")
@@ -90,11 +89,10 @@ def _prepare_aart(downloaded_task: dict[str, str], prepared_task: dict[str, str]
 
     # create new dataframe where questions have their keywords replaced by ascii art
     aart_df = pd.DataFrame(
-        zip(
-            null_df.apply(lambda row: substitute(row["prompt"], row["ascii_map"]), axis="columns").explode(ignore_index=True),
-            null_df.apply(lambda row: len(row["ascii_map"]) * [row["q_id"]], axis="columns").explode(ignore_index=True)
-        ), columns=["prompt", "q_id"],
-    )
+        null_df.apply(lambda row: substitute(row["prompt"], row["ascii_map"]), axis="columns").explode(),
+        columns=["prompt"],
+    ).reset_index(names=["q_id"])
+
     aart_out = downloaded_task["aart"].replace(".csv", ".parquet")
     aart_df.to_parquet(aart_out, index=False)
 
