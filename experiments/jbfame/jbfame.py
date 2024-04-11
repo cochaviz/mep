@@ -17,6 +17,8 @@ import torch
 
 import data
 
+datetime_format = "%Y-%m-%d-%H-%M-%S"
+
 def _clean_gpu(model, tokenizer):
     # explicitly remove model 
     del model
@@ -32,7 +34,7 @@ def _clean_gpu(model, tokenizer):
 @dataclass
 class TrainingArgumentsCustomDefaults(TrainingArguments):
     output_dir: str = field(
-        default=time.strftime("%Y-%m-%d-%H-%M-%S"),
+        default=time.strftime(datetime_format),
     )
     warmup_steps: int = field(
         default=1,
