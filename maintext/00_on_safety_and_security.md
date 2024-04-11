@@ -2,18 +2,16 @@
 
 Perhaps I should preface with a discussion on the distinction between safety and
 security. Currently, nearly all papers discuss jailbreaking in the context of
-safety rather than security which at first might seem innocuous, but I think
-carries deeper consequences.
+safety although, I would argue, this concerns a security not a safety issue.
 
-We generally associate safety with a lack of risk or physical harm in the sense
-that one cannot inflict harm onto themselves or by some accident be harmed.
-Security is generally considered to be applicable when determining to what
-extent a system is resistant to an intentional, external source of, harm.
+Generally, safety is considered as the risk of accidental harm while security
+concerns the risk of intentional harm. Jailbreaking a model intentionally
+circumvents its safety training which could result in harm, and is therefore a
+matter of security.
 
-Clearly, in the context of jailbreaking, we are actively trying to inflict harm.
-Regardless of how we exactly define harm in this context, we are intentionally
-inflicting it, since we are aware that what we are doing is not in-line with how
-the system is supposed to be used.
+While the argument is simple, the fact that these terms are confused is
+concerning. They are vastly different problems that are apparently being
+confused. We could argue that that does not matter
 
 Furthermore, I would argue that a person actively trying to jailbreak a system
 is _not_ harming themselves. At least, not intentionally. An adversary's aim is
