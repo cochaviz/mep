@@ -18,6 +18,11 @@ month since the (effective) start of my thesis. Therefore, I will write a short
 recap up until the last progress meeting which took place on the 14th of
 February.
 
+More details on the progress itself, implementation, etc. can be found in the
+corresponding GitHub repository: <https://github.com/cochaviz/mep>. Experiments
+are described in the `experiments` directory, specifically the Jupyter notebooks
+in the corresponding subfolders.
+
 ## Recap
 
 I've established a research question: _Does the few-shot learning ability of a
