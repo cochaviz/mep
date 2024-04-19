@@ -24,17 +24,46 @@ def _download_dan(output_dir: str) -> str:
     return os.path.join(output_dir, dan_path)
 
 def _download_null(output_dir: str) -> str:
-    null_link = "https://raw.githubusercontent.com/verazuo/jailbreak_llms/main/data/questions.csv"
+    # null_link = "https://raw.githubusercontent.com/verazuo/jailbreak_llms/main/data/questions.csv"
+    null_link = "https://raw.githubusercontent.com/SheltonLiu-N/AutoDAN/main/data/advbench/harmful_behaviors.csv"
     null_path = "null.csv"
     _wget(null_link, null_path, output_dir)
     return os.path.join(output_dir, null_path)
 
+def _download_adan(output_dir: str) -> str:
+    setup = [
+        "git clone https://github.com/SheltonLiu-N/AutoDAN.git AutoDAN",
+        "conda create -n AutoDAN python=3.9",
+        "conda run -n AutoDAN pip install -r AutoDAN/requirements.txt",
+    ]
+
+    try:
+        for command in setup:
+            subprocess.run(command.split(), cwd=output_dir).check_returncode()
+        subprocess.run(
+            "conda run -n AutoDAN python download_models.py".split(), 
+            cwd=os.path.join(output_dir, "AutoDAN", "models")
+        ).check_returncode()
+    except subprocess.CalledProcessError:
+        print("AutoDAN setup didn't complete. This might indicate that the setup has already been done.")
+        print(f"To make sure, please check whether the folder AutoDAN exists in {output_dir}, and whether the conda environment AutoDAN has been created.")
+
+    return os.path.join(output_dir, "AutoDAN")
+    
 def _prepare_null(downloaded_task: dict[str, str], prepared_task: dict[str, str]) -> str:
     """
     Extract question and question id from the dataset. This dataset is used to
     supply the other datasets with questions.
     """
+    assert "null" in downloaded_task, "Null task has to be downloaded to prepare Null."
+
     null_df = pd.read_csv(downloaded_task["null"])
+
+    try:
+        null_df.drop(columns=["target"], inplace=True) 
+        null_df.rename(columns={"goal": "question"}, inplace=True)
+    except KeyError:
+        print("Assuming null dataset is default and in the right format.")
 
     null_df = pd.DataFrame({ 
             "prompt": null_df["question"].to_list(),
@@ -46,6 +75,9 @@ def _prepare_null(downloaded_task: dict[str, str], prepared_task: dict[str, str]
     return null_out
 
 def _prepare_dan(downloaded_task: dict[str, str], prepared_task: dict[str, str]) -> str:
+    assert "null" in downloaded_task, "Null task has to be downloaded to prepare DAN."
+    assert "dan" in downloaded_task, "DAN task has to be downloaded to prepare DAN."
+
     dan_df = pd.read_csv(downloaded_task["dan"])
     null_df = pd.read_parquet(prepared_task["null"])
     
@@ -62,7 +94,18 @@ def _prepare_dan(downloaded_task: dict[str, str], prepared_task: dict[str, str])
 
     return dan_out
 
+def _prepare_adan(downloaded_task: dict[str, str], prepared_task: dict[str, str]) -> str:
+    assert "null" in downloaded_task, "Null task has to be downloaded to prepare AutoDAN."
+    assert "adan" in downloaded_task, "AutoDAN task has to be downloaded to prepare AutoDAN."
+
+    subprocess.call("conda run -n AutoDAN python autodan_hga_eval.py".split(), cwd=downloaded_task["adan"]) 
+   
+    return ":)"
+
 def _prepare_aart(downloaded_task: dict[str, str], prepared_task: dict[str, str]) -> str:
+    assert "null" in downloaded_task, "Null task has to be downloaded to prepare AART."
+    assert "aart" in downloaded_task, "AART task has to be downloaded to prepare AART."
+
     def remove_words(text, words):
         return filter(lambda token: token.lower() not in words, text.split())
 
@@ -105,16 +148,18 @@ def _check_task(task: str):
 def _check_tasks(tasks: list[str]):
     [ _check_task(task) for task in tasks ]
 
-_download_task: dict[str, Callable[[str], str]] = {
+_download_task: dict[str, Callable[[str], Optional[str]]] = {
     "null": _download_null,
     "dan": _download_dan,
-    "aart": lambda output_dir: os.path.join(output_dir, "aart.csv")  # aart is generated from null
+    "aart": lambda output_dir: os.path.join(output_dir, "aart.csv"),  # aart is generated from null
+    "adan": _download_adan,
 }
 
-_prepare_task: dict[str, Callable[[dict, dict], str]] = {
+_prepare_task: dict[str, Callable[[dict, dict], Optional[str]]] = {
     "null": _prepare_null,
     "dan": _prepare_dan,
     "aart": _prepare_aart,
+    "adan": _prepare_adan,
 }
 
 try:
@@ -151,7 +196,7 @@ def prepare(downloaded_task: dict[str, str], cleanup: bool = True) -> dict[str, 
     # cleanup old downloaded files
     if cleanup:
         for old_file in downloaded_task.values():
-            if os.path.exists(old_file):
+            if os.path.exists(old_file) and not os.path.isdir(old_file):
                 os.remove(old_file)
 
     return prepared_task
