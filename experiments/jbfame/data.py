@@ -11,10 +11,7 @@ import art
 from tqdm import tqdm
 import pandas as pd
 
-def _wget(link: str, filename: str, output_dir: Optional[str] = None) -> str:
-    if output_dir:
-        Path(output_dir).mkdir(parents=True, exist_ok=True)
-
+def _wget(link: str, filename: str, output_dir: Optional[str] = None) -> None:
     subprocess.run(["wget", "-qO", filename, link], cwd=output_dir)
 
 def _download_dan(output_dir: str) -> str:
@@ -174,6 +171,9 @@ def available_tasks():
 
 def download(tasks: list[str], output_dir: str) -> dict[str, str]:
     task_paths = {}
+
+    if not os.path.exists(output_dir):
+        Path(output_dir).mkdir(parents=True, exist_ok=True)
 
     # dowload selected tasks in output_dir
     for task in (pbar := tqdm(tasks, desc="Downloading tasks")):
