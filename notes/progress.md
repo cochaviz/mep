@@ -319,4 +319,85 @@ of `dan` I want to filter out examples that exceed a certain length. The
 experiments already take quite a while to run, so I do not want to resort to
 simply truncating the prompts to the appropriate length.
 
+## Mar 14 - Apr 11
+
+Again, the hernia has been hard, but it is definitely getting better. Although
+there was no progress for two-three weeks, I have found a better rhythm for
+working while dealing with this injury in this week.
+
+### Results
+
+Regardless, have managed to iterate on the experiment and run them to attain
+some preliminary results. As discussed in the corresponding Jupyter notebook
+(`experiments/jbfame/jbfame.ipynb`), we get the following distributions for each
+task (see @fig:task_loss_multiple). The discrepancy in the loss of each task is
+caused by changes applied throughout the different iterations of the experiment.
+Even though the first iterations of the experiment were not adequately set up,
+the results seem to be rather agreeable.
+
+![Loss (in cross-entropy) for each task based on multiple iterations of the experiment. Notice how, even though the experiment has changed over time, the rank of each task has remained quite consistent.](images/image.png){#fig:task_loss_multiple}
+
+Because I am interested in how the changes I introduced affected the results and
+whether these are in line with my expectations when implementing these changes.
+
+![Development of the results over the course of the iterations of the experiment. Please take the third set of points (with respect to the leftmost earliest results in time) with a grain of salt as many changes were introduced and many runs were done to test these changes.](images/image-1.png){#fig:task_loss_time}
+
+### Discussion
+
+While very rudimentary (no discussion of NaN values, or multiple runs in close
+succession with many changes), the graph does show the impact that some larger
+changes had on the results. Most notably the switch as implemented around the
+end of last month. As can be read in the commit history using `git log`, this is
+the moment only unsafe questions were included in the experiment by means of
+PurpleLLama. This makes sense in the case of the `null` and `aart` tasks as
+before, all questions were treated as 'unsafe' and thus training on a response
+along the lines of "Sorry but I cannot assist with that" logically incurs high
+loss when considering questions that might actually be safe. It's not entirely
+clear to me why the `dan` task did not decrease in loss similarly. It could be
+that because the jailbreaking templates have been around for a while, the model
+was already trained to simply ignore those, and the resulting discrepancy is
+only due to the change in RNG seed (since shuffling the training set was also
+introduced as a change at that point).
+
+Another big leap can be found in the last iteration. Here, questions that are
+considered 'safe' (even if they are part of a jailbreaking prompt) should be met
+with the response "Of course, here is..." in contrast with the prior version
+that considered only unsafe responses. One way in which the rise in loss can be
+explained is because the model could have been trained to simply respond with
+"Sorry, but I cannot help you with that." to all questions, while a more complex
+strategy is necessary in the latter.
+
+Interestingly, the `aart` is the least perturbed by all these changes. I expect
+this to be the case because ASCII art contains certain characters which are
+incredibly easy to recognize and therefore classify as 'unsafe'. Or at least
+this would be the case, were it not that the difference between the last and the
+second iteration is less than the difference between the first and second.
+These changes, however, are arguably slight and multiple runs with different
+seeds are therefore necessary. Another reason that these might be easier to
+train on, is because this jailbreaking method is simply less effective (which
+would not be surprising given my naive, and rather brute-force, strategy for
+picking sensitive words). This can be relatively easily be adjusted for by only
+using successful jailbreaks which can be done using the PurpleLLama model.
+Another important variable is the length of the prompts, this can be fixed by
+introducing a new tasks or longer questions.
+
+### Conclusion
+
+Finally, the most recent results (see @fig:task_loss_single). While they might
+look promising, it is too early too determine whether these are actually
+meaningful given the research question as discussed in the paragraphs before
+which is further confirmed by the fact that we expect the `null` task to have
+the lowest loss.
+
+![Results of the last iteration of the experiment. While seemingly promising, we expect the `null` task to be the lowest, and have more variables to eliminate from the setup to draw conclusions.](images/image-2.png){#fig:task_loss_single}
+
+Seeing as the experiment has some variables which must be eliminated, I will
+introduce the following changes:
+
+1. Make sure only successful jailbreaking attacks are included.
+2. Introduce a new CO task with a smaller prompt/template length.
+3. Find longer questions (arguably easier than goal 2).
+4. Introduce a new MG task to combat the supposed 'uniformity' in the `aart`
+   task.
+
 ## References
