@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 from itertools import product
 import warnings
+import traceback
 
 import art
 from tqdm import tqdm
@@ -42,8 +43,9 @@ def _download_adan(output_dir: str) -> str:
             cwd=os.path.join(output_dir, "AutoDAN", "models")
         ).check_returncode()
     except subprocess.CalledProcessError:
-        print("AutoDAN setup didn't complete. This might indicate that the setup has already been done.")
-        print(f"To make sure, please check whether the folder AutoDAN exists in {output_dir}, and whether the conda environment AutoDAN has been created.")
+        print("AutoDAN setup didn't complete due to the following error:")
+        traceback.print_exc()
+        print(f"This might indicate that the setup has already been done. To make sure, please check whether the folder AutoDAN exists in {output_dir}, and whether the conda environment AutoDAN has been created.")
 
     return os.path.join(output_dir, "AutoDAN")
     
