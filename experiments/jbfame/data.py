@@ -39,7 +39,7 @@ def _download_adan(output_dir: str) -> str:
 
         # download models 
         try:
-            subprocess.run("cd AutoDAN/models && && conda run -n AutoDAN python download_models.py", cwd=output_dir, shell=True).check_returncode()
+            subprocess.run("cd AutoDAN/models && conda run -n AutoDAN python download_models.py", cwd=output_dir, shell=True).check_returncode()
         except subprocess.CalledProcessError as e:
             print("Inability to download models is most probably because of Llama2 being a private model. Please login with HuggingFace using credentials that have access to the model.")
             raise e
