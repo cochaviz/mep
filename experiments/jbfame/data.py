@@ -29,27 +29,27 @@ def _download_null(output_dir: str) -> str:
     return os.path.join(output_dir, null_path)
 
 def _download_adan(output_dir: str) -> str:
-    setup = [
-        "git clone https://github.com/SheltonLiu-N/AutoDAN.git AutoDAN",
-        "conda create -n AutoDAN python=3.9",
-        "conda run -n AutoDAN pip install -r AutoDAN/requirements.txt",
-    ]
-
     try:
-        for command in setup:
-            subprocess.run(command.split(), cwd=output_dir).check_returncode()
-        subprocess.run(
-            "conda run -n AutoDAN python download_models.py".split(), 
-            cwd=os.path.join(output_dir, "AutoDAN", "models")
-        ).check_returncode()
-    except subprocess.CalledProcessError:
-        print("AutoDAN setup didn't complete due to the following error:")
+        # download source
+        subprocess.run("test -d AutoDAN || git clone https://github.com/SheltonLiu-N/AutoDAN.git AutoDAN", cwd=output_dir, shell=True).check_returncode()
+        
+        # prepare environment 
+        if subprocess.run("conda env list | grep AutoDAN", shell=True).returncode != 0:     
+            subprocess.run("conda create -y -n AutoDAN python=3.9 && conda run -n AutoDAN pip install -r AutoDAN/requirements.txt", cwd=output_dir, shell=True).check_returncode()
+
+        # download models 
+        try:
+            subprocess.run("cd AutoDAN/models && && conda run -n AutoDAN python download_models.py", cwd=output_dir, shell=True).check_returncode()
+        except subprocess.CalledProcessError as e:
+            print("Inability to download models is most probably because of Llama2 being a private model. Please login with HuggingFace using credentials that have access to the model.")
+            raise e
+    except subprocess.CalledProcessError as e:
+        print(e.stderr)
         traceback.print_exc()
-        print(f"This might indicate that the setup has already been done. To make sure, please check whether the folder AutoDAN exists in {output_dir}, and whether the conda environment AutoDAN has been created.")
 
     return os.path.join(output_dir, "AutoDAN")
     
-def _prepare_null(downloaded_task: dict[str, str], prepared_task: dict[str, str]) -> str:
+def _prepare_null(downloaded_task: dict[str, str], prepared_task: dict[str, str]) -> str: 
     """
     Extract question and question id from the dataset. This dataset is used to
     supply the other datasets with questions.
@@ -102,7 +102,7 @@ def _prepare_adan(downloaded_task: dict[str, str], prepared_task: dict[str, str]
     return ":)"
 
 def _prepare_aart(downloaded_task: dict[str, str], prepared_task: dict[str, str]) -> str:
-    assert "null" in downloaded_task, "Null task has to be downloaded to prepare AART."
+    assert "null" in prepared_task, "Null task has to be prepared to prepare AART."
     assert "aart" in downloaded_task, "AART task has to be downloaded to prepare AART."
 
     def remove_words(text, words):
