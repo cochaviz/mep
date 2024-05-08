@@ -370,7 +370,7 @@ def _llama_respond(datasets: Dataset | DatasetDict):
 def tag_question_safety(
     args: CustomArguments, 
 ) -> DatasetDict:
-    datasets = _load_datasets(args.data_dir, args.tasks, args.qsi_path)
+    datasets = _load_datasets(args.data_dir, args.tasks)
 
     for dataset, task in datasets.items():
         if args.model_path.startswith("meta-llama"):
@@ -421,7 +421,6 @@ def data_info(
     if not datasets: 
         datasets = _load_datasets(
             args.data_dir,
-            qsi_path=args.qsi_path
         )
         datasets = _preprocess_datasets(
             datasets,
