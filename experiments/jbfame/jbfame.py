@@ -115,12 +115,6 @@ class CustomArguments:
                            directory will be used as the top level directory for
                            all runs.""" }
     ) 
-    qsi_path: Optional[str] = field(
-        default=None,
-        metadata={ "help": """Path to the question safety index. If None, the
-                           question safety index will be computed using the
-                           'null' task.""" }
-    )
 
     def __str__(self) -> str:
         from inspect import cleandoc
@@ -140,7 +134,6 @@ class CustomArguments:
 def _load_datasets(
     data_dir: str, 
     tasks: Optional[list[str]] = None,
-    qsi_path: Optional[str] = None
 ):
     """
     Reads *.parquet files in data_dir and returns them as a
@@ -153,21 +146,9 @@ def _load_datasets(
         Assigns the 'unsafe' column from the null dataset to all other datasets
         based on the question ID.
         """
-        if not qsi_path:
-            raise ValueError("qsi_path cannot be None.")
-
-        question_safety_index = pd.read_csv(qsi_path)["unsafe"]
-        question_safety_index = question_safety_index.to_dict()
+        assert not "null" in datasets or "unsafe" not in datasets["null"].column_names, "The null task has to be present and tagged in order to insert the unsafe column."
 
         try:
-            if "unsafe" in datasets["null"].column_names:
-                datasets["null"] = datasets["null"].remove_columns("unsafe")
-
-            # The null task does not have a q_id column since they refer to the
-            # question index. Because they (should) correspond, we can just map
-            # it one-to-one.
-            datasets["null"] = datasets["null"].add_column("unsafe", question_safety_index.values())
-
             for task, dataset in datasets.items():
                 if "q_id" not in dataset.column_names and task != "null":
                     raise ValueError(f"q_id column not found in task {task}.")
@@ -175,7 +156,7 @@ def _load_datasets(
                     continue
 
                 datasets[task] = dataset.map(
-                    lambda row: { **row, "unsafe": question_safety_index[row["q_id"]] }
+                    lambda row: { **row, "unsafe": datasets["null"][row["q_id"]] }
                 )
         except:
             raise ValueError("It appears that the question safety index does not have the same shape as the null dataset. Please make sure the question safety index is based on the current 'null' task.") 
@@ -197,7 +178,7 @@ def _load_datasets(
         dataset = parquet.read_table(file)
         datasets[task] = Dataset(dataset)
 
-    if qsi_path:
+    if "null" in datasets and "unsafe" in datasets["null"].column_names:
         datasets = insert_unsafe_column(datasets) 
 
     return datasets
@@ -389,7 +370,7 @@ def _llama_respond(datasets: Dataset | DatasetDict):
 def tag_question_safety(
     args: CustomArguments, 
 ) -> DatasetDict:
-    datasets = _load_datasets(args.data_dir)
+    datasets = _load_datasets(args.data_dir, args.tasks, args.qsi_path)
 
     for dataset, task in datasets.items():
         if args.model_path.startswith("meta-llama"):
