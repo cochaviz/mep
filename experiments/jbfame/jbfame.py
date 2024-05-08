@@ -327,11 +327,11 @@ def _load_model(model_path: str):
 
 ### === QUESTION SAFETY ===
 
-def _tag_question_safety_llama(dataset: Dataset | DatasetDict):
+def _tag_conversation_safety_llama(dataset: Dataset | DatasetDict):
     """
-    Filter out all the unsafe questions or ineffective jailbreaking responses.
-    The rows should be in the 'chat' format. In case only questions have to be
-    judged, should only contain the 'user' 
+    Tag questions questions and prompts as 'unsafe' (i.e. unsafe to ask or
+    successful jailbreaks).  The rows should be in the 'chat' format. In case
+    only questions have to be judged, should only contain the 'user' 
     """
     def is_unsafe(row):
         chat = [ {"role": "user", "content": row["prompt"]} ]
@@ -348,13 +348,41 @@ def _tag_question_safety_llama(dataset: Dataset | DatasetDict):
         row["unsafe"] = tokenizer.decode(output[0][prompt_len:], skip_special_tokens=True) != 'safe'
         return row
 
+    # as we only infer, we do not need the gradients
     with torch.no_grad():
         model, tokenizer = _load_model("meta-llama/LlamaGuard-7b")
-        filtered_dataset = dataset.map(is_unsafe)  
+        dataset_filtered = dataset.map(is_unsafe)  
 
     del model, tokenizer
 
-    return filtered_dataset
+    return dataset_filtered
+
+def _llama_respond(datasets: Dataset | DatasetDict):
+    """
+    Standard llama response function. This function is used to respond to
+    prompts in the 'chat' format.
+    """
+    def respond(row):
+        assert "chat" in row, "Row does not contain 'chat' column."
+
+        # move to gpu by default. No chance you're gonna run llama 7b on cpu ;)
+        input_ids: torch.Tensor = tokenizer.apply_chat_template(chat, return_tensors="pt").to("cuda") # type: ignore
+
+        output = model.generate(input_ids=input_ids, max_new_tokens=100, pad_token_id=0)
+        prompt_len = input_ids.shape[-1]
+        response = tokenizer.decode(output[0][prompt_len:], skip_special_tokens=True)
+
+        row["chat"].append({"role": "assistant", "content": response})
+        return row
+
+    with torch.no_grad():
+        model, tokenizer = _load_model("meta-llama/Llama-2-7b-chat-hf")
+        dataset_responded = datasets.map(respond)  
+
+    del model, tokenizer
+    
+    return dataset_responded
+
 
 ### PUBLIC FUNCTIONS
 
@@ -365,11 +393,28 @@ def tag_question_safety(
 
     for dataset, task in datasets.items():
         if args.model_path.startswith("meta-llama"):
-            dataset[task] = _tag_question_safety_llama(dataset) # type: ignore
+            dataset[task] = _tag_conversation_safety_llama(dataset) # type: ignore
         else:
             # TODO implement a filter for non-llama models
             raise NotImplementedError("Only llama models are supported for question safety tagging.")
     
+    return datasets
+
+def tag_prompt_jailbreak(
+    args: CustomArguments,
+) -> DatasetDict:
+    datasets = tag_question_safety(args)
+
+    # only for unsafe questions do we want to judge whether the jailbreak was
+    # successful. Otherwise, it doesn't matter.
+    for dataset, task in datasets.filter(lambda row: row["unsafe"]).items():
+        if args.model_path.startswith("meta-llama"):
+            dataset[task] = _llama_respond(dataset)
+            dataset[task] = _tag_conversation_safety_llama(dataset)
+        else:
+            # TODO implement a filter for non-llama models
+            raise NotImplementedError("Only llama models are supported for question prompt jailbreak tagging.")
+
     return datasets
 
 def data_info(

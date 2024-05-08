@@ -12,20 +12,21 @@ import art
 from tqdm import tqdm
 import pandas as pd
 
-def _wget(link: str, filename: str, output_dir: Optional[str] = None) -> None:
-    subprocess.run(["wget", "-qO", filename, link], cwd=output_dir)
-
 def _download_dan(output_dir: str) -> str:
     dan_link = "https://raw.githubusercontent.com/verazuo/jailbreak_llms/main/data/jailbreak_prompts.csv"
     dan_path = "dan.csv"
-    _wget(dan_link, dan_path, output_dir)
+
+    subprocess.run(["wget", "-qO", dan_path, dan_link], cwd=output_dir).check_returncode()
+
     return os.path.join(output_dir, dan_path)
 
 def _download_null(output_dir: str) -> str:
-    # null_link = "https://raw.githubusercontent.com/verazuo/jailbreak_llms/main/data/questions.csv"
-    null_link = "https://raw.githubusercontent.com/SheltonLiu-N/AutoDAN/main/data/advbench/harmful_behaviors.csv"
+    null_link = "https://raw.githubusercontent.com/verazuo/jailbreak_llms/main/data/questions.csv"
+    # null_link = "https://raw.githubusercontent.com/SheltonLiu-N/AutoDAN/main/data/advbench/harmful_behaviors.csv"
     null_path = "null.csv"
-    _wget(null_link, null_path, output_dir)
+
+    subprocess.run(["wget", "-qO", null_path, null_link], cwd=output_dir).check_returncode()
+
     return os.path.join(output_dir, null_path)
 
 def _download_adan(output_dir: str) -> str:
@@ -44,6 +45,17 @@ def _download_adan(output_dir: str) -> str:
             print("Inability to download models is most probably because of Llama2 being a private model. Please login with HuggingFace using credentials that have access to the model.")
             raise e
     except subprocess.CalledProcessError as e:
+        print(e.stderr)
+        traceback.print_exc()
+
+    # download nltk dependencies in autodan environment
+    try:
+        subprocess.run(
+            "conda run -n AutoDAN python -m ntlk.download all",
+            shell=True,
+        ).check_returncode()
+    except subprocess.CalledProcessError as e:
+        print("Something went wrong with downloading nltk dependencies. Please check the error message.")
         print(e.stderr)
         traceback.print_exc()
 
@@ -74,19 +86,12 @@ def _prepare_null(downloaded_task: dict[str, str], prepared_task: dict[str, str]
     return null_out
 
 def _prepare_dan(downloaded_task: dict[str, str], prepared_task: dict[str, str]) -> str:
-    assert "null" in downloaded_task, "Null task has to be downloaded to prepare DAN."
     assert "dan" in downloaded_task, "DAN task has to be downloaded to prepare DAN."
 
     dan_df = pd.read_csv(downloaded_task["dan"])
-    null_df = pd.read_parquet(prepared_task["null"])
-    
-    dan_df = pd.DataFrame(
-        product(dan_df["prompt"], zip(null_df["prompt"], null_df.index.to_list() )) , columns=["prompt", "question"]
-    )
-    dan_df[["question", "q_id"]] = pd.DataFrame(dan_df["question"].to_list(), index=dan_df.index)
-    dan_df["prompt"] = dan_df[["prompt", "question"]].agg("\n".join, axis="columns")
-
-    dan_df.drop(columns=["question"], inplace=True)
+   
+    drop_columns = list(set(dan_df.columns.to_list()) - set(["prompt", "q_id"]))
+    dan_df.drop(columns=drop_columns, inplace=True)
 
     dan_out = downloaded_task["dan"].replace(".csv", ".parquet")
     dan_df.to_parquet(dan_out, index=False)
