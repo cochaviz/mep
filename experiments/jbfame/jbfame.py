@@ -134,14 +134,14 @@ class CustomArguments:
 def _load_datasets(
     data_dir: str, 
     tasks: Optional[list[str]] = None,
-):
+) -> DatasetDict:
     """
     Reads *.parquet files in data_dir and returns them as a
     DatasetDict where the key is the file name (without the extension) and the
     value the dataset.
     """
 
-    def insert_unsafe_column(datasets):
+    def insert_unsafe_column(datasets: DatasetDict):
         """
         Assigns the 'unsafe' column from the null dataset to all other datasets
         based on the question ID.
@@ -308,18 +308,21 @@ def _load_model(model_path: str):
 
 ### === QUESTION SAFETY ===
 
-def _tag_conversation_safety_llama(dataset: Dataset | DatasetDict):
+def _tag_conversation_safety_llama(dataset: DatasetDict) -> DatasetDict:
     """
     Tag questions questions and prompts as 'unsafe' (i.e. unsafe to ask or
     successful jailbreaks).  The rows should be in the 'chat' format. In case
     only questions have to be judged, should only contain the 'user' 
+
+    NOTE: Separate function, since purple-llama model needs to be initialized in
+    order to respond.
     """
     def is_unsafe(row):
         if not "chat" in row:
             row["chat"] = [ {"role": "user", "content": row["prompt"]} ]
 
         # move to gpu by default. No chance you're gonna run llama 7b on cpu ;)
-        input_ids: torch.Tensor = tokenizer.apply_chat_template(chat, return_tensors="pt").to("cuda") # type: ignore
+        input_ids: torch.Tensor = tokenizer.apply_chat_template(row["chat"], return_tensors="pt").to("cuda") # type: ignore
 
         output = model.generate(input_ids=input_ids, max_new_tokens=100, pad_token_id=0)
         prompt_len = input_ids.shape[-1]
@@ -337,16 +340,19 @@ def _tag_conversation_safety_llama(dataset: Dataset | DatasetDict):
 
     return dataset_filtered
 
-def _llama_respond(datasets: Dataset | DatasetDict):
+def _llama_respond(datasets: DatasetDict) -> DatasetDict:
     """
     Standard llama response function. This function is used to respond to
     prompts in the 'chat' format.
+
+    NOTE: Separate function, since llama model needs to be initialized in order
+    to respond.
     """
     def respond(row):
         assert "chat" in row, "Row does not contain 'chat' column."
 
         # move to gpu by default. No chance you're gonna run llama 7b on cpu ;)
-        input_ids: torch.Tensor = tokenizer.apply_chat_template(chat, return_tensors="pt").to("cuda") # type: ignore
+        input_ids: torch.Tensor = tokenizer.apply_chat_template(row["chat"], return_tensors="pt").to("cuda") # type: ignore
 
         output = model.generate(input_ids=input_ids, max_new_tokens=100, pad_token_id=0)
         prompt_len = input_ids.shape[-1]
@@ -359,11 +365,11 @@ def _llama_respond(datasets: Dataset | DatasetDict):
 
     # as we only infer, we do not need the gradients
     with torch.no_grad():
-        dataset_responded = datasets.map(respond)  
+        datasets_responded = datasets.map(respond)  
 
     _clean_gpu(model, tokenizer)
     
-    return dataset_responded
+    return datasets_responded
 
 
 ### PUBLIC FUNCTIONS
@@ -385,14 +391,14 @@ def tag_question_safety(
 def tag_prompt_jailbreak(
     args: CustomArguments,
 ) -> DatasetDict:
-    datasets = tag_question_safety(args)
+    datasets = _load_datasets(args.data_dir, args.tasks)
+    datasets_tagged = _tag_conversation_safety_llama(datasets)
 
     # only for unsafe questions do we want to judge whether the jailbreak was
     # successful. Otherwise, it doesn't matter.
-    for task, dataset in datasets.filter(lambda row: row["unsafe"]).items():
+    for task, dataset in datasets_tagged.filter(lambda row: row["unsafe"]).items():
         if args.model_path.startswith("meta-llama"):
-            datasets[task] = _llama_respond(dataset)
-            datasets[task] = _tag_conversation_safety_llama(dataset)
+            datasets_tagged[task] = _tag_conversation_safety_llama(_llama_respond(dataset))
         else:
             # TODO implement a filter for non-llama models
             raise NotImplementedError("Only llama models are supported for question prompt jailbreak tagging.")
