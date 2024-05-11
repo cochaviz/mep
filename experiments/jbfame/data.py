@@ -12,6 +12,7 @@ import art
 from tqdm import tqdm
 import pandas as pd
 
+# FIXME temporary solution for long loading times
 N_SAMPLES = 10
 
 def _download_dan(output_dir: str) -> str:
