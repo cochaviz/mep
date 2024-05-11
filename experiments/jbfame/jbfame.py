@@ -373,9 +373,9 @@ def tag_question_safety(
 ) -> DatasetDict:
     datasets = _load_datasets(args.data_dir, args.tasks)
 
-    for dataset, task in datasets.items():
+    for task, dataset in datasets.items():
         if args.model_path.startswith("meta-llama"):
-            dataset[task] = _tag_conversation_safety_llama(dataset) # type: ignore
+            datasets[task] = _tag_conversation_safety_llama(dataset) # type: ignore
         else:
             # TODO implement a filter for non-llama models
             raise NotImplementedError("Only llama models are supported for question safety tagging.")
@@ -389,10 +389,10 @@ def tag_prompt_jailbreak(
 
     # only for unsafe questions do we want to judge whether the jailbreak was
     # successful. Otherwise, it doesn't matter.
-    for dataset, task in datasets.filter(lambda row: row["unsafe"]).items():
+    for task, dataset in datasets.filter(lambda row: row["unsafe"]).items():
         if args.model_path.startswith("meta-llama"):
-            dataset[task] = _llama_respond(dataset)
-            dataset[task] = _tag_conversation_safety_llama(dataset)
+            datasets[task] = _llama_respond(dataset)
+            datasets[task] = _tag_conversation_safety_llama(dataset)
         else:
             # TODO implement a filter for non-llama models
             raise NotImplementedError("Only llama models are supported for question prompt jailbreak tagging.")
