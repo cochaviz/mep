@@ -315,10 +315,8 @@ def _tag_conversation_safety_llama(dataset: Dataset | DatasetDict):
     only questions have to be judged, should only contain the 'user' 
     """
     def is_unsafe(row):
-        chat = [ {"role": "user", "content": row["prompt"]} ]
-
-        if "response" in row:
-            chat.append({"role": "assistant", "content": row["response"]})
+        if not "chat" in row:
+            row["chat"] = [ {"role": "user", "content": row["prompt"]} ]
 
         # move to gpu by default. No chance you're gonna run llama 7b on cpu ;)
         input_ids: torch.Tensor = tokenizer.apply_chat_template(chat, return_tensors="pt").to("cuda") # type: ignore
@@ -329,12 +327,13 @@ def _tag_conversation_safety_llama(dataset: Dataset | DatasetDict):
         row["unsafe"] = tokenizer.decode(output[0][prompt_len:], skip_special_tokens=True) != 'safe'
         return row
 
+    model, tokenizer = _load_model("meta-llama/LlamaGuard-7b")
+
     # as we only infer, we do not need the gradients
     with torch.no_grad():
-        model, tokenizer = _load_model("meta-llama/LlamaGuard-7b")
         dataset_filtered = dataset.map(is_unsafe)  
 
-    del model, tokenizer
+    _clean_gpu(model, tokenizer)
 
     return dataset_filtered
 
@@ -356,11 +355,13 @@ def _llama_respond(datasets: Dataset | DatasetDict):
         row["chat"].append({"role": "assistant", "content": response})
         return row
 
+    model, tokenizer = _load_model("meta-llama/Llama-2-7b-chat-hf")
+
+    # as we only infer, we do not need the gradients
     with torch.no_grad():
-        model, tokenizer = _load_model("meta-llama/Llama-2-7b-chat-hf")
         dataset_responded = datasets.map(respond)  
 
-    del model, tokenizer
+    _clean_gpu(model, tokenizer)
     
     return dataset_responded
 
