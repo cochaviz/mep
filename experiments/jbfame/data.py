@@ -12,6 +12,8 @@ import art
 from tqdm import tqdm
 import pandas as pd
 
+N_SAMPLES = 10
+
 def _download_dan(output_dir: str) -> str:
     dan_link = "https://raw.githubusercontent.com/verazuo/jailbreak_llms/main/data/jailbreak_prompts.csv"
     dan_path = "dan.csv"
@@ -68,7 +70,7 @@ def _prepare_null(downloaded_task: dict[str, str], prepared_task: dict[str, str]
     """
     assert "null" in downloaded_task, "Null task has to be downloaded to prepare Null."
 
-    null_df = pd.read_csv(downloaded_task["null"])
+    null_df = pd.read_csv(downloaded_task["null"]).sample(N_SAMPLES)
 
     try:
         null_df.drop(columns=["target"], inplace=True) 
