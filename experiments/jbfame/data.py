@@ -212,8 +212,8 @@ def prepare(downloaded_task: dict[str, str], cleanup: bool = True) -> dict[str, 
     return prepared_task
 
 def download_and_prepare(tasks: Optional[list[str]] = None, output_dir="data", cleanup: bool = True) -> dict[str, str]:
-    if not tasks:
-        tasks = list(_download_task.keys())
+    tasks = tasks or list(_download_task.keys())
+
     if "null" not in tasks:
         tasks = ["null"] + tasks
 
