@@ -4,16 +4,12 @@ import subprocess
 from typing import Callable, Optional
 import os
 from pathlib import Path
-from itertools import product
 import warnings
 import traceback
 
 import art
 from tqdm import tqdm
 import pandas as pd
-
-# FIXME temporary solution for long loading times
-N_SAMPLES = 10
 
 def _download_dan(output_dir: str) -> str:
     dan_link = "https://raw.githubusercontent.com/verazuo/jailbreak_llms/main/data/jailbreak_prompts.csv"
@@ -71,7 +67,7 @@ def _prepare_null(downloaded_task: dict[str, str], prepared_task: dict[str, str]
     """
     assert "null" in downloaded_task, "Null task has to be downloaded to prepare Null."
 
-    null_df = pd.read_csv(downloaded_task["null"]).sample(N_SAMPLES)
+    null_df = pd.read_csv(downloaded_task["null"])
 
     try:
         null_df.drop(columns=["target"], inplace=True) 
@@ -192,7 +188,7 @@ def download(tasks: list[str], output_dir: str) -> dict[str, str]:
 
     return task_paths
 
-def prepare(downloaded_task: dict[str, str], cleanup: bool = True) -> dict[str, str]:
+def prepare( downloaded_task: dict[str, str], cleanup: bool = True) -> dict[str, str]:
     if "null" not in downloaded_task:
         print("Null task has to be present to build other tasks.")
 
@@ -211,7 +207,11 @@ def prepare(downloaded_task: dict[str, str], cleanup: bool = True) -> dict[str, 
 
     return prepared_task
 
-def download_and_prepare(tasks: Optional[list[str]] = None, output_dir="data", cleanup: bool = True) -> dict[str, str]:
+def download_and_prepare(
+    tasks: Optional[list[str]] = None, 
+    output_dir="data", 
+    cleanup: bool = True, 
+) -> dict[str, str]:
     tasks = tasks or list(_download_task.keys())
 
     if "null" not in tasks:
