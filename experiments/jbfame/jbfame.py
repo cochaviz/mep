@@ -15,6 +15,8 @@ import seaborn as sns
 import pandas as pd
 import torch
 
+import random
+
 import data
 
 datetime_format = "%Y-%m-%d-%H-%M-%S"
@@ -78,6 +80,11 @@ class CustomArguments:
                            run.  To list all available tasks, use
                            --list-tasks.""" }
     )
+    task_size: Optional[int] = field(
+        default=None,
+        metadata={ "help": """Number of samples in each task. Used for
+                           testing and debugging.""" }
+    )
     response_unsafe: str = field(
         default="Sorry, but I cannot help with that.",
         metadata={ "help" : """Response the model should give to unsafe
@@ -134,6 +141,8 @@ class CustomArguments:
 def _load_datasets(
     data_dir: str, 
     tasks: Optional[list[str]] = None,
+    sample_size: Optional[int] = None,
+    restrict_sampled: bool = False,
 ) -> DatasetDict:
     """
     Reads *.parquet files in data_dir and returns them as a
@@ -163,10 +172,32 @@ def _load_datasets(
 
         return datasets
 
+    def subset_questions(datasets: DatasetDict, sample_size: int, restrict: bool = False):
+        """
+        Selects a subset of the questions in the null dataset and filters the
+        other tasks based on the question ID. Ensures that only the same
+        questions are sampled. If restrict is set, the other tasks are also
+        limited to 'sample_size' samples.
+        """
+        sampled_indices = random.sample(range(len(datasets["null"])), sample_size)
+        datasets["null"] = datasets["null"].select(sampled_indices)
+
+        for task, dataset in datasets.items():
+            if task == "null":
+                continue
+
+            datasets[task] = dataset.filter(lambda row: row["q_id"] in sampled_indices)
+
+            if restrict:
+                sampled_indices_task = random.sample(range(len(datasets[task])), sample_size)
+                datasets[task] = datasets[task].select(sampled_indices_task)
+
+        return datasets
+
     datasets: DatasetDict = DatasetDict()
 
     if not os.path.exists(data_dir):
-        data.download_and_prepare(output_dir=data_dir)        
+        data.download_and_prepare(output_dir=data_dir) 
 
     for file in glob(os.path.join(data_dir, "*.parquet")):
         task = file.split("/")[-1].split(".")[0]
@@ -180,6 +211,9 @@ def _load_datasets(
 
     if "null" in datasets and "unsafe" in datasets["null"].column_names:
         datasets = insert_unsafe_column(datasets) 
+
+    if sample_size:
+        subset_questions(datasets, sample_size, restrict_sampled)
 
     return datasets
 
