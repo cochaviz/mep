@@ -183,6 +183,8 @@ def _load_datasets(
         datasets["null"] = datasets["null"].select(sampled_indices)
 
         for task, dataset in datasets.items():
+            if "q_id" not in dataset.column_names and task != "null":
+                raise ValueError(f"q_id column not found in task {task}.")
             if task == "null":
                 continue
 
@@ -197,7 +199,7 @@ def _load_datasets(
     datasets: DatasetDict = DatasetDict()
 
     if not os.path.exists(data_dir):
-        data.download_and_prepare(output_dir=data_dir) 
+        data.download_and_prepare(tasks=tasks, output_dir=data_dir) 
 
     for file in glob(os.path.join(data_dir, "*.parquet")):
         task = file.split("/")[-1].split(".")[0]
