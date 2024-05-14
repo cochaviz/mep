@@ -1,15 +1,18 @@
 #!/usr/bin/env python
 
-import subprocess
 from typing import Callable, Optional
-import os
 from pathlib import Path
+from itertools import product
+
+import os
+import subprocess
 import warnings
 import traceback
 
-import art
 from tqdm import tqdm
+
 import pandas as pd
+import art
 
 def _download_dan(output_dir: str) -> str:
     dan_link = "https://raw.githubusercontent.com/verazuo/jailbreak_llms/main/data/jailbreak_prompts.csv"
@@ -86,9 +89,19 @@ def _prepare_null(downloaded_task: dict[str, str], prepared_task: dict[str, str]
 
 def _prepare_dan(downloaded_task: dict[str, str], prepared_task: dict[str, str]) -> str:
     assert "dan" in downloaded_task, "DAN task has to be downloaded to prepare DAN."
+    assert "null" in downloaded_task, "NULL task has to be prepared to prepare DAN."
 
     dan_df = pd.read_csv(downloaded_task["dan"])
-   
+    null_df = pd.read_parquet(prepared_task["null"])
+
+    # df where all questions (and their ids) are combined with all prompts
+    dan_df = pd.DataFrame(
+        product(dan_df["prompt"], zip(null_df["prompt"], null_df.index.to_list())) , columns=["prompt", "question"]
+    )
+    # unpack question and question id
+    dan_df[["question", "q_id"]] = pd.DataFrame(dan_df["question"].to_list(), index=dan_df.index)
+    dan_df["prompt"] = dan_df[["prompt", "question"]].agg("\n".join, axis="columns")
+
     drop_columns = list(set(dan_df.columns.to_list()) - set(["prompt", "q_id"]))
     dan_df.drop(columns=drop_columns, inplace=True)
 
