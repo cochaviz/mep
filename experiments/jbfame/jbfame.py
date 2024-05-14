@@ -142,7 +142,7 @@ def _load_datasets(
     data_dir: str, 
     tasks: Optional[list[str]] = None,
     sample_size: Optional[int] = None,
-    restrict_sampled: bool = False,
+    restrict_sampled: bool = True,
 ) -> DatasetDict:
     """
     Reads *.parquet files in data_dir and returns them as a
@@ -172,7 +172,7 @@ def _load_datasets(
 
         return datasets
 
-    def subset_questions(datasets: DatasetDict, sample_size: int, restrict: bool = False):
+    def sample_questions(datasets: DatasetDict, sample_size: int, restrict: bool = False):
         """
         Selects a subset of the questions in the null dataset and filters the
         other tasks based on the question ID. Ensures that only the same
@@ -213,7 +213,7 @@ def _load_datasets(
         datasets = insert_unsafe_column(datasets) 
 
     if sample_size:
-        subset_questions(datasets, sample_size, restrict_sampled)
+        sample_questions(datasets, sample_size, restrict_sampled)
 
     return datasets
 
@@ -411,7 +411,7 @@ def _llama_respond(datasets: DatasetDict) -> DatasetDict:
 def tag_question_safety(
     args: CustomArguments, 
 ) -> DatasetDict:
-    datasets = _load_datasets(args.data_dir, args.tasks)
+    datasets = _load_datasets(args.data_dir, args.tasks, sample_size=args.task_size)
 
     for task, dataset in datasets.items():
         if args.model_path.startswith("meta-llama"):
@@ -425,7 +425,7 @@ def tag_question_safety(
 def tag_prompt_jailbreak(
     args: CustomArguments,
 ) -> DatasetDict:
-    datasets = _load_datasets(args.data_dir, args.tasks)
+    datasets = _load_datasets(args.data_dir, args.tasks, sample_size=args.task_size)
     datasets_tagged = _tag_conversation_safety_llama(datasets)
 
     # only for unsafe questions do we want to judge whether the jailbreak was
