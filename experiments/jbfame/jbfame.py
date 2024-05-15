@@ -140,10 +140,8 @@ class CustomArguments:
 
 ### === DATASETS ===
 
-def _load_datasets(
-    data_dir: str, 
-    tasks: Optional[list[str]] = None,
-    sample_size: Optional[int] = None,
+def load_datasets(
+    args: CustomArguments,
     restrict_sampled: bool = True,
 ) -> DatasetDict:
     """
@@ -200,14 +198,14 @@ def _load_datasets(
 
     datasets: DatasetDict = DatasetDict()
 
-    if not os.path.exists(data_dir):
-        data.download_and_prepare(tasks=tasks, output_dir=data_dir) 
+    if not os.path.exists(args.data_dir):
+        data.download_and_prepare(tasks=args.tasks, output_dir=args.data_dir) 
 
-    for file in glob(os.path.join(data_dir, "*.parquet")):
+    for file in glob(os.path.join(args.data_dir, "*.parquet")):
         task = file.split("/")[-1].split(".")[0]
 
         # if task is not in tasks, skip
-        if tasks and task not in tasks:
+        if args.tasks and task not in args.tasks:
             continue        
 
         dataset = parquet.read_table(file)
@@ -216,8 +214,8 @@ def _load_datasets(
     if "null" in datasets and "unsafe" in datasets["null"].column_names:
         datasets = insert_unsafe_column(datasets) 
 
-    if sample_size:
-        sample_questions(datasets, sample_size, restrict_sampled)
+    if args._task_size:
+        sample_questions(datasets, args._task_size, restrict_sampled)
 
     return datasets
 
@@ -415,28 +413,29 @@ def _llama_respond(datasets: DatasetDict) -> DatasetDict:
 ### PUBLIC FUNCTIONS
 
 def tag_prompt_safety(
-    args: CustomArguments, 
+    datasets: DatasetDict,
+    args: CustomArguments 
 ) -> DatasetDict:
     if not args.model_path.startswith("meta-llama"):
         # TODO implement a filter for non-llama models
         raise NotImplementedError("Only llama models are supported for question safety tagging.")
 
-    datasets = _load_datasets(args.data_dir, args.tasks, sample_size=args._task_size)
     datasets_tagged = _tag_conversation_safety_llama(datasets, unsafe_column_name="unsafe")
     
     return datasets_tagged
 
 def tag_prompt_jailbreak(
-    args: CustomArguments,
+    datasets: DatasetDict,
+    args: CustomArguments 
 ) -> DatasetDict:
     if not args.model_path.startswith("meta-llama"):
         # TODO implement a filter for non-llama models
         raise NotImplementedError("Only llama models are supported for question prompt jailbreak tagging.")
 
-    datasets_tagged = _load_datasets(args.data_dir, args.tasks, sample_size=args._task_size)
-
-    if "unsafe" not in datasets_tagged["null"].column_names:
-        datasets_tagged = tag_prompt_safety(args)
+    if "unsafe" not in datasets["null"].column_names:
+        datasets_tagged = tag_prompt_safety(datasets, args)
+    else:
+        datasets_tagged = datasets
 
     # only keep the unsafe questions, and check whether they illicit a jailbreak
     datasets_tagged = datasets_tagged.filter(lambda row: row["unsafe"])
@@ -468,9 +467,7 @@ def data_info(
         raise NotImplementedError("Only parameter 'length' can be used...")
 
     if not datasets: 
-        datasets = _load_datasets(
-            args.data_dir,
-        )
+        datasets = load_datasets(args)
         datasets = _preprocess_datasets(
             datasets,
             args.response_unsafe,
@@ -527,7 +524,7 @@ def run(
         tokenizer.pad_token = tokenizer.eos_token
 
     # load the datasets and download them if necessary
-    datasets = _load_datasets(
+    datasets = load_datasets(
         args.data_dir, 
         args.tasks
     )
