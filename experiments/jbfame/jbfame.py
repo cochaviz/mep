@@ -164,7 +164,7 @@ def load_datasets(
             for task, dataset in datasets.items():
                 if "q_id" not in dataset.column_names and task != "null":
                     raise ValueError(f"q_id column not found in task {task}.")
-                if task == "null":
+                if task == "null" or "unsafe" in dataset.column_names:
                     continue
 
                 datasets[task] = dataset.map(
@@ -209,12 +209,14 @@ def load_datasets(
         remote_path = "https://github.com/cochaviz/mep/raw/experiments/experiments/jbfame/assets/data_preprocessed"
         tasks = tasks if tasks else data.available_tasks()
         
-        for task in tasks:
+        for task in (pbar := tqdm(tasks, desc="Downloading preprocessed datasets from remote")):
+            pbar.set_postfix_str(f"Downloading {task}")
+
             remote_task_path = f"{remote_path}/{args.model_path}/{task}.parquet"
             local_task_path = f"{args.data_dir}/{task}.parquet"
 
             subprocess.run(
-                f"wget -O {local_task_path} {remote_task_path}",
+                f"wget -qO {local_task_path} {remote_task_path}",
                 shell=True, check=True
             )
 
