@@ -164,12 +164,17 @@ def load_datasets(
             for task, dataset in datasets.items():
                 if "q_id" not in dataset.column_names and task != "null":
                     raise ValueError(f"q_id column not found in task {task}.")
-                if task == "null" or "unsafe" in dataset.column_names:
+                if task == "null" or ("unsafe" in dataset.column_names and "chat" in dataset.column_names):
                     continue
 
-                datasets[task] = dataset.map(
-                    lambda row: { **row, "unsafe": datasets["null"][row["q_id"]] }
-                )
+                datasets[task] = dataset.map(lambda row: { 
+                        **row, 
+                        "unsafe": datasets["null"][row["q_id"]]["unsafe"], 
+                        "chat":  [{ 
+                            "role": "user", 
+                            "content": row["prompt"] 
+                        }]
+                    })
         except:
             raise ValueError("It appears that the question safety index does not have the same shape as the null dataset. Please make sure the question safety index is based on the current 'null' task.") 
 
@@ -244,8 +249,10 @@ def load_datasets(
         dataset = parquet.read_table(file)
         datasets[task] = Dataset(dataset)
 
+    assert "null" in datasets, "The null task has to be present in the dataset."
+
     # if the null task is present, insert the unsafe column in all other tasks
-    if "null" in datasets and "unsafe" in datasets["null"].column_names:
+    if "unsafe" in datasets["null"].column_names:
         datasets = insert_unsafe_column(datasets) 
 
     # if the task size is set, sample the datasets
