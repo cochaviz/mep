@@ -334,6 +334,8 @@ def persist_datasets(args: CustomArguments, datasets: Optional[DatasetDict]):
     def write_to_file(datasets: DatasetDict):
         output_path = f"assets/data_preprocessed/{args.model_path}"
 
+        os.makedirs(output_path, exist_ok=False)
+
         for task, dataset in datasets.items():
             dataset.to_parquet(f"{output_path}/{task}.parquet")
         
