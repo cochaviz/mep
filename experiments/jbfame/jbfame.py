@@ -155,7 +155,7 @@ def load_datasets(
         Assigns the 'unsafe' column from the null dataset to all other datasets
         based on the question ID.
         """
-        assert not "null" in datasets or "unsafe" not in datasets["null"].column_names, "The null task has to be present and tagged in order to insert the unsafe column."
+        assert "null" in datasets and "unsafe" in datasets["null"].column_names, "The null task has to be present and tagged in order to insert the unsafe column."
 
         try:
             for task, dataset in datasets.items():
