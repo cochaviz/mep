@@ -83,7 +83,7 @@ def _prepare_null(downloaded_task: dict[str, str], prepared_task: dict[str, str]
     })
 
     null_out = downloaded_task["null"].replace(".csv", ".parquet")
-    null_df.to_parquet(null_out, index=True)
+    null_df.to_parquet(null_out, index=False)
 
     return null_out
 

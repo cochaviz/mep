@@ -2,6 +2,7 @@
 
 import os
 from glob import glob
+import subprocess
 from typing import Optional
 from dataclasses import dataclass, field
 import time
@@ -14,6 +15,7 @@ from pyarrow import parquet
 import seaborn as sns
 import pandas as pd
 import torch
+from tqdm import tqdm
 
 import random
 
@@ -143,6 +145,7 @@ class CustomArguments:
 def load_datasets(
     args: CustomArguments,
     restrict_sampled: bool = True,
+    try_preprocessed_from_remote = True,
 ) -> DatasetDict:
     """
     Reads *.parquet files in data_dir and returns them as a
@@ -196,11 +199,39 @@ def load_datasets(
 
         return datasets
 
+    def load_preprocessed_from_remote(tasks: Optional[list[str]]):
+        """
+        Loads the preprocessed datasets from the remote location. If the
+        datasets are not found, they are downloaded and prepared.
+        """
+        os.makedirs(args.data_dir, exist_ok=False)
+
+        remote_path = "https://github.com/cochaviz/mep/raw/experiments/experiments/jbfame/assets/data_preprocessed"
+        tasks = tasks if tasks else data.available_tasks()
+        
+        for task in tasks:
+            remote_task_path = f"{remote_path}/{args.model_path}/{task}.parquet"
+            local_task_path = f"{args.data_dir}/{task}.parquet"
+
+            subprocess.run(
+                f"wget -O {local_task_path} {remote_task_path}",
+                shell=True, check=True
+            )
+
     datasets: DatasetDict = DatasetDict()
 
+    # if the data directory does not exist, download the data
     if not os.path.exists(args.data_dir):
-        data.download_and_prepare(tasks=args.tasks, output_dir=args.data_dir) 
+        if not try_preprocessed_from_remote:
+            data.download_and_prepare(args.tasks, args.data_dir) 
+        else:
+            try:
+                load_preprocessed_from_remote(args.tasks)
+            except subprocess.CalledProcessError:
+                return
+                data.download_and_prepare(args.tasks, args.data_dir)
 
+    # load the datasets from the data directory
     for file in glob(os.path.join(args.data_dir, "*.parquet")):
         task = file.split("/")[-1].split(".")[0]
 
@@ -211,9 +242,11 @@ def load_datasets(
         dataset = parquet.read_table(file)
         datasets[task] = Dataset(dataset)
 
+    # if the null task is present, insert the unsafe column in all other tasks
     if "null" in datasets and "unsafe" in datasets["null"].column_names:
         datasets = insert_unsafe_column(datasets) 
 
+    # if the task size is set, sample the datasets
     if args._task_size:
         sample_questions(datasets, args._task_size, restrict_sampled)
 
@@ -287,6 +320,20 @@ def _preprocess_datasets(
         # remove_columns=datasets["null"].column_names,
         batched=True
     )
+
+def persist_datasets(args: CustomArguments, datasets: Optional[DatasetDict]):
+    def write_to_file(datasets: DatasetDict):
+        output_path = f"assets/data_preprocessed/{args.model_path}"
+
+        for task, dataset in datasets.items():
+            dataset.to_parquet(f"{output_path}/{task}.parquet")
+        
+        return output_path
+
+    if not datasets:
+        datasets = load_datasets(args)
+    
+    return write_to_file(datasets)
 
 ### === MODELS ===
 
