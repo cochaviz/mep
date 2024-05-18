@@ -180,15 +180,20 @@ def load_datasets(
 
         return datasets
 
-    def sample_questions(datasets: DatasetDict, sample_size: int, restrict: bool = False):
+    def sample_questions(datasets: DatasetDict, sample_size: int, restrict: bool):
         """
         Selects a subset of the questions in the null dataset and filters the
         other tasks based on the question ID. Ensures that only the same
         questions are sampled. If restrict is set, the other tasks are also
         limited to 'sample_size' samples.
         """
-        sampled_indices = random.sample(range(len(datasets["null"])), sample_size)
-        datasets["null"] = datasets["null"].select(sampled_indices)
+        indices = range(len(datasets["null"]))
+
+        try:
+            indices = random.sample(indices, k=sample_size)
+            datasets["null"] = datasets["null"].select(indices)
+        except ValueError:
+            print("Sample size exceeds the number of questions in the null task. Returning all questions.")
 
         for task, dataset in datasets.items():
             if "q_id" not in dataset.column_names and task != "null":
@@ -196,7 +201,7 @@ def load_datasets(
             if task == "null":
                 continue
 
-            datasets[task] = dataset.filter(lambda row: row["q_id"] in sampled_indices)
+            datasets[task] = dataset.filter(lambda row: row["q_id"] in indices)
 
             if restrict:
                 sampled_indices_task = random.sample(range(len(datasets[task])), sample_size)
@@ -235,7 +240,6 @@ def load_datasets(
             try:
                 load_preprocessed_from_remote(args.tasks)
             except subprocess.CalledProcessError:
-                return
                 data.download_and_prepare(args.tasks, args.data_dir)
 
     # load the datasets from the data directory
