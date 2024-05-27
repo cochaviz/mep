@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 from itertools import product
 import subprocess
-from typing import Optional
 import os
 
 import pandas as pd
@@ -13,16 +12,16 @@ from jbfame.tasks.base import Task, TaskDict
 class Dan(Task):
     name: str = "dan"
 
-    def download(self, output_dir: str) -> str:
+    def _download(self, output_dir: str) -> str:
         dan_link = "https://raw.githubusercontent.com/verazuo/jailbreak_llms/main/data/jailbreak_prompts.csv"
         dan_path = "dan.csv"
 
-        subprocess.run(["wget", "-qO", dan_path, dan_link], cwd=output_dir).check_returncode()
+        subprocess.run(["wget", "-qO", dan_path, dan_link], cwd=output_dir, check=True)
 
         self.downloaded = os.path.join(output_dir, dan_path)
         return self.downloaded
 
-    def prepare(self, prior_tasks: TaskDict) -> str: 
+    def _prepare(self, prior_tasks: TaskDict) -> str: 
         dan_df = pd.read_csv(self.downloaded)
         null_df = pd.read_parquet(prior_tasks[Null.name].prepared) # type: ignore
 

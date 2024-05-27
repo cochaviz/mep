@@ -3,14 +3,11 @@ import random
 import shutil
 import subprocess
 from typing import Optional
-from glob import glob
-import warnings
 
 import pandas as pd
 import seaborn as sns
-from pyarrow import parquet
 from tqdm import tqdm
-from datasets import Dataset, DatasetDict
+from datasets import DatasetDict
 from jbfame import data
 from jbfame.utils.params import CustomArguments
 from transformers import PreTrainedTokenizerBase
@@ -86,7 +83,7 @@ def load(
 
         return datasets
 
-    def load_preprocessed_from_remote(tasks: Optional[list[str]]):
+    def load_preprocessed_from_remote(tasks: list[str]):
         """
         Loads the preprocessed datasets from the remote location. If the
         datasets are not found, they are downloaded and prepared.
@@ -94,7 +91,9 @@ def load(
         os.makedirs(args.data_dir, exist_ok=False)
 
         remote_path = "https://github.com/cochaviz/mep/raw/experiments/experiments/jbfame/assets/data_preprocessed"
-        tasks = tasks if tasks else data.available_tasks()
+
+        if "null" not in tasks:
+            tasks = ["null"] + tasks
         
         for task in (pbar := tqdm(tasks, desc="Downloading preprocessed datasets from remote")):
             pbar.set_postfix_str(f"Downloading {task}")
@@ -107,39 +106,19 @@ def load(
                 shell=True, check=True
             )
 
-    datasets: DatasetDict = DatasetDict()
     tasks = args.tasks or data.available_tasks()
 
     # if the data directory does not exist, download the data
-    if not os.path.exists(args.data_dir):
-        if not try_preprocessed_from_remote:
-            data.download_and_prepare(tasks, args.data_dir) 
-        else:
-            try:
-                load_preprocessed_from_remote(args.tasks)
-            except subprocess.CalledProcessError:
-                print("Not all tasks are available in the remote location. Creating datasets from scratch...")
-                shutil.rmtree(args.data_dir)
-                data.download_and_prepare(tasks, args.data_dir)
-    else: 
-        available_tasks = [
-            task.split("/")[-1].split(".")[0] 
-                for task in glob(os.path.join(args.data_dir, "*.parquet"))
-        ]
-
-        if len(set(tasks) - set(available_tasks)) > 0:
-            raise FileNotFoundError(f"Tasks {set(tasks) - set(available_tasks)} are not available in the data directory. Remove the 'data' folder if you want to download all tasks.")
-
-    # load the datasets from the data directory
-    for file in glob(os.path.join(args.data_dir, "*.parquet")):
-        task = file.split("/")[-1].split(".")[0]
-
-        # if task is not in tasks, skip
-        if task != "null" and task not in tasks:
-            continue        
-
-        dataset = parquet.read_table(file)
-        datasets[task] = Dataset(dataset)
+    if not try_preprocessed_from_remote or os.path.exists(args.data_dir):
+        datasets = data.download_and_prepare(tasks, args.data_dir) 
+    else:
+        try:
+            load_preprocessed_from_remote(tasks)
+        except subprocess.CalledProcessError:
+            shutil.rmtree(args.data_dir)
+            print("Not all tasks are available in the remote location. Creating datasets from scratch...")
+        finally:
+            datasets = data.download_and_prepare(tasks, args.data_dir)
 
     # always the case when downloading with the 'download_and_prepare' function
     assert "null" in datasets, "The null task has to be present in the dataset."

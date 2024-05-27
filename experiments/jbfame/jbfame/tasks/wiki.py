@@ -6,7 +6,7 @@ from jbfame.tasks.null import Null
 class Wiki(PrepareOnlyTask):
     name = "wiki"
 
-    def prepare(self, prior_tasks: TaskDict) -> str:
+    def _prepare(self, prior_tasks: TaskDict) -> str:
         null_df = pd.read_parquet(prior_tasks[Null.name].prepared)
 
         # attach question id to prompt

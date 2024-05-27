@@ -8,7 +8,7 @@ from jbfame.tasks.base import Task, TaskDict
 class ADan(Task):
     name = "adan"
 
-    def download(self, output_dir: str) -> str:
+    def _download(self, output_dir: str) -> str:
         try:
             # download source
             subprocess.run("test -d AutoDAN || git clone https://github.com/SheltonLiu-N/AutoDAN.git AutoDAN", cwd=output_dir, shell=True).check_returncode()
@@ -42,7 +42,7 @@ class ADan(Task):
         return self.downloaded
         
 
-    def prepare(self, prior_tasks: TaskDict) -> str:
+    def _prepare(self, prior_tasks: TaskDict) -> str:
         raise NotImplementedError("This function is not implemented yet.")
 
         subprocess.call("conda run -n AutoDAN python autodan_hga_eval.py".split(), cwd=downloaded_task["adan"]) 

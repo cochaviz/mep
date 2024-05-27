@@ -7,7 +7,7 @@ from jbfame.tasks.null import Null
 class AArt(PrepareOnlyTask):
     name = "aart"
 
-    def prepare(self, prior_tasks: TaskDict) -> str:
+    def _prepare(self, prior_tasks: TaskDict) -> str:
         def remove_words(text, words):
             return filter(lambda token: token.lower() not in words, text.split())
 

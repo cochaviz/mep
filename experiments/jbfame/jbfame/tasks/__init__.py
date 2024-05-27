@@ -11,7 +11,7 @@ all_tasks: dict[str, type[Task]] = {
     Null.name: Null,
     Dan.name: Dan,
     AArt.name: AArt,
-    ADan.name: ADan,
+    # ADan.name: ADan,
     Wiki.name: Wiki,
     EncB64.name: EncB64,
 }
@@ -21,7 +21,7 @@ __all__ = [
     "Dan",
     "AArt",
     "Wiki",
-    "ADan",
+    # "ADan",
     "EncB64",
     "TaskDict",
 ]

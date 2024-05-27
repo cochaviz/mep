@@ -13,7 +13,7 @@ class Null(Task):
 
     name: str = "null"
 
-    def download(self, output_dir: str) -> str:
+    def _download(self, output_dir: str) -> str:
         null_link = "https://raw.githubusercontent.com/verazuo/jailbreak_llms/main/data/questions.csv"
         # null_link = "https://raw.githubusercontent.com/SheltonLiu-N/AutoDAN/main/data/advbench/harmful_behaviors.csv"
         null_path = f"{self.name}.csv"
@@ -23,7 +23,7 @@ class Null(Task):
         self.downloaded = os.path.join(output_dir, null_path)
         return self.downloaded
 
-    def prepare(self, prior_tasks: TaskDict) -> str: 
+    def _prepare(self, prior_tasks: TaskDict) -> str: 
         """
         Extract question and question id from the dataset. This dataset is used to
         supply the other datasets with questions.
