@@ -1,3 +1,4 @@
+from operator import is_
 import os
 import random
 import shutil
@@ -5,16 +6,17 @@ import subprocess
 from typing import Optional
 
 import pandas as pd
+from regex import W
 import seaborn as sns
 from tqdm import tqdm
 from datasets import DatasetDict
-from jbfame import data
-from jbfame.utils.params import CustomArguments
 from transformers import PreTrainedTokenizerBase
 
+from jbfame import data, utils
+from jbfame.utils.params import ExperimentArguments
 
 def load(
-    args: CustomArguments,
+    args: ExperimentArguments,
     restrict_sampled: bool = True,
     try_preprocessed_from_remote = True,
 ) -> DatasetDict:
@@ -133,12 +135,57 @@ def load(
 
     return datasets
 
+def _all_have_column(datasets: DatasetDict, column: str) -> bool:
+    return all(map(lambda dataset: column in dataset.column_names, datasets.values()))
+
+def _filter_unsafe_questions(
+    datasets: DatasetDict,
+    args: ExperimentArguments,
+) -> DatasetDict:
+    # if unsafe column not present in null, generate it
+    if "unsafe" not in datasets["null"].column_names:
+        # we only care about the 'null' dataset when it comes to safe or unsafe
+        # questions, since all other tasks depend on null for the actual questions
+        datasets["null"] = utils.safety.tag_prompt_safety(
+            datasets["null"], args # type: ignore
+        )
+        datasets["null"].to_parquet(os.path.join(args.data_dir, "null.parquet"))
+
+    if "unsafe" in datasets["null"].column_names and not _all_have_column(datasets, "unsafe"):
+        # on reload, the unsafe column is inserted in all datasets 
+        datasets = utils.datasets.load(args)
+
+    return datasets.filter(lambda row: row["unsafe"])
+
+def _filter_jailbreak_prompts(
+    datasets: DatasetDict,
+    args: ExperimentArguments,
+) -> DatasetDict:
+    if not _all_have_column(datasets, "jailbreak"):
+        # generate the jailbreak column, i.e. respond to the prompts and check
+        # whether the conversation is unsafe
+        datasets = utils.safety.tag_prompt_jailbreak(
+            datasets, args 
+        )
+
+    return datasets.filter(lambda row: row["jailbreak"])
+
+def _filter_prompt_length(
+    datasets: DatasetDict,
+    max_prompt_length: int,
+) -> DatasetDict:
+    def length_less_than(
+        row, 
+    ) -> bool:
+        return len(row["prompt"]) <= max_prompt_length
+
+    return datasets.filter(length_less_than)
+
 def preprocess(
-    datasets: DatasetDict, 
-    response_unsafe: str, 
-    response_safe: str, 
+    datasets: DatasetDict,
+    args: ExperimentArguments,
     tokenizer: Optional[PreTrainedTokenizerBase] = None, # skips tokenization if None
-    character_limit: Optional[int] = None, # skips character limit if None
+    remove_unused_columns: bool = True,
 ) -> DatasetDict:
     """
     Takes a dataset and preprocesses it by adding the response to the prompt,
@@ -147,20 +194,21 @@ def preprocess(
     can be found in the 'chat' column. If character_limit is not None, all
     prompts exceeding this limit are removed. 
     """
-    def is_unsafe(row):
-        return "unsafe" not in row or row["unsafe"]
- 
-    def add_response(row: dict):
-        if "chat" not in row:
-            row["chat"] = [ 
-                { 
-                    "role": "user", 
-                    "content": row["prompt"] 
-                }, { 
-                    "role": "assistant", 
-                    "content": response_unsafe if is_unsafe(row) else response_safe
-                }  
-            ]
+    def set_expected_response(
+        row: dict, 
+        response_safe: str = args.response_safe, 
+        response_unsafe: str = args.response_unsafe
+    ):
+        # NOTE: the 'chat' column is overriden here
+        row["chat"] = [
+            { 
+                "role": "user", 
+                "content": row["prompt"] 
+            }, { 
+                "role": "assistant", 
+                "content": response_unsafe if row["unsafe"] else response_safe
+            }  
+        ]
         return row    
 
     def parse_chat(row: dict):
@@ -168,6 +216,7 @@ def preprocess(
             raise ValueError("Tokenizer cannot be None.")
 
         row["chat"] = tokenizer.apply_chat_template(row["chat"], tokenize=False)
+
         return row
     
     def tokenize(row: dict):
@@ -185,25 +234,43 @@ def preprocess(
 
         return row
 
-    # HACK: ideally, the token limit would be based on the actual number of
-    # tokens. Here, it is based on the number of characters in the prompt. This
-    # is not ideal, but it allows for easy batching and is good enough for me.
-    processed = datasets.map(add_response).filter(lambda row: not character_limit or not len(row["prompt"]) > character_limit)
+    # we generally only care about the unsafe questions, since otherwise we
+    # cannot determine whether it is a successful jailbreak prompt
+    processed = _filter_unsafe_questions(datasets, args)
+
+    if not args.max_prompt_length:
+        # HACK: ideally, the token limit would be based on the actual number of
+        # tokens. Here, it is based on the number of characters in the prompt. This
+        # is not ideal, but it allows for easy batching and is good enough for me.
+        processed = _filter_prompt_length(processed, args.max_prompt_length)
+
+    # filtering jailbreaks only after the prompt length has been filtered, since
+    # it saves a lot of time
+    processed = _filter_jailbreak_prompts(processed, args)
 
     if not tokenizer:
         return processed
 
-    # because the 'apply chat template' does not work in batch mode, we have to
-    # do this separately
-    return processed.map(
-        parse_chat
-    ).map(
-        tokenize,
-        # remove_columns=datasets["null"].column_names,
+    # expected responses are only added after since, if we do not have a
+    # tokenizer, we do not expect to run the full experiment
+    processed = processed.map(
+        set_expected_response,
         batched=True
     )
 
-def persist(args: CustomArguments, datasets: Optional[DatasetDict]):
+    #  all columns except the input_ids, since we only need this for training
+    #  and inference
+    all_but_input_ids: list[str] = list(set(datasets["null"].column_names) - set(["input_ids", "q_id"]))
+
+    # because the 'apply chat template' does not work in batch mode, we have to
+    # do this separately
+    return processed.map(parse_chat).map(
+        tokenize,
+        remove_columns=all_but_input_ids if remove_unused_columns else None,
+        batched=True
+    )
+
+def persist(args: ExperimentArguments, datasets: Optional[DatasetDict]):
     def write_to_file(datasets: DatasetDict):
         output_path = f"assets/data_preprocessed/{args.model_path}"
 
@@ -220,7 +287,7 @@ def persist(args: CustomArguments, datasets: Optional[DatasetDict]):
     return write_to_file(datasets)
 
 def info(
-    args: CustomArguments, 
+    args: ExperimentArguments, 
     parameter: Optional[str] = "length",
     figure_path: Optional[str] = None, 
     datasets: Optional[DatasetDict] = None,

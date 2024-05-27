@@ -39,7 +39,7 @@ class TrainingArgumentsCustomDefaults(TrainingArguments):
 
 
 @dataclass
-class CustomArguments:
+class ExperimentArguments:
     """Arguments for the script. If you'd like to change the training
     configuration, use TrainingArguments."""
 

@@ -1,20 +1,32 @@
-from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
-from datasets import DatasetDict
+from enum import Enum
+from typing import Any, Optional
 from warnings import warn
 
+from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig, pipeline
+from datasets import DatasetDict
 from peft.utils.other import prepare_model_for_kbit_training
 from peft.mapping import get_peft_model
 from peft.tuners.lora import LoraConfig
-
 import torch
+from zmq import device
 
-def load(model_path: str): 
+from jbfame import utils
+
+class Quantization(Enum):
+    """
+    Enum for quantization levels. 
+    """
+    NONE = 0
+    MODERATE = 1
+    AGGRESSIVE = 2
+
+def load(model_path: str, quantization: Quantization = Quantization.MODERATE): 
     """
     Loads the model and tokenizer from the model_path. If the model_path starts
     with meta-llama, the model is loaded with 4bit quantization and PEFT to
     optimize training and reduce resource usage.
     """
-    def load_model_llama(model_path: str):
+    def load_quantized_aggressive(model_path: str):
         """
         Load model and tokenizer from model_path using various optimization
         techniques such as 4bit quantization and PEFT. Most of this has been taken
@@ -55,13 +67,49 @@ def load(model_path: str):
 
         return model, AutoTokenizer.from_pretrained(model_path)
 
-    if model_path.startswith("meta-llama"):
-        return load_model_llama(model_path)
-    
-    warn("Quantization and PEFT are only supported for llama models.")
+    def load_quantized_moderate(model_path: str):
+        """
+        Load model and tokenizer from model_path using normal 16 quantization
+        and PEFT.
+        """
+        # peft config
+        lora_config = LoraConfig(
+            r=32,
+            lora_alpha=64,
+            target_modules=[
+                "q_proj",
+                "k_proj",
+                "v_proj",
+                "o_proj",
+                "gate_proj",
+                "up_proj",
+                "down_proj",
+                "lm_head",
+            ],
+            bias="none",
+            lora_dropout=0.05,
+            task_type="CAUSAL_LM",
+        )
+        # retrieve the quantized model and its parameter-efficient representation
+        model = AutoModelForCausalLM.from_pretrained(
+            model_path, torch_dtype=torch.bfloat16
+        )
+        model = get_peft_model(model, lora_config)
 
-    return AutoModelForCausalLM.from_pretrained(model_path), AutoTokenizer.from_pretrained(model_path) 
+        return model, AutoTokenizer.from_pretrained(model_path)
 
+    if quantization == Quantization.MODERATE:
+        model, tokenizer = load_quantized_moderate(model_path)
+    if quantization == Quantization.AGGRESSIVE:
+        model, tokenizer = load_quantized_aggressive(model_path)
+    if quantization == Quantization.NONE:
+        model, tokenizer = AutoModelForCausalLM.from_pretrained(model_path), AutoTokenizer.from_pretrained(model_path)    
+
+    # by default, llama doesn't have a pad token
+    tokenizer.add_special_tokens({"pad_token":"<pad>"})
+    model.resize_token_embeddings(len(tokenizer))
+
+    return model, tokenizer
 
 def batch_respond(datasets: DatasetDict, model_path: str="meta-llama/Llama-2-7b-chat-hf") -> DatasetDict:
     """
@@ -71,33 +119,42 @@ def batch_respond(datasets: DatasetDict, model_path: str="meta-llama/Llama-2-7b-
     NOTE: Separate function, since llama model needs to be initialized in order
     to respond.
     """
-    def respond(row):
-        assert "chat" in row, "Row does not contain 'chat' column."
+    def respond(data, model, tokenizer):
+        assert "chat" in data, "Row does not contain 'chat' column."
 
         # move to gpu by default. No chance you're gonna run llama 7b on cpu ;)
-        input_ids: torch.Tensor = tokenizer.apply_chat_template(row["chat"], return_tensors="pt").to("cuda") # type: ignore
+        input_ids: torch.Tensor = tokenizer.apply_chat_template(
+            data["chat"], return_tensors="pt", padding=True
+        ).to("cuda") # type: ignore
 
         output = model.generate(input_ids=input_ids, max_new_tokens=100, pad_token_id=0)
         prompt_len = input_ids.shape[-1]
         response = tokenizer.decode(output[0][prompt_len:], skip_special_tokens=True)
 
-        row["chat"].append({"role": "assistant", "content": response})
-        return row
+        data["chat"].append({"role": "assistant", "content": response})
+        return data
 
-    model, tokenizer = load(model_path)
+    # pipe = pipeline("text-generation", model=model_path, device=0)
+    # datasets = utils.datasets._filter_prompt_length(datasets, 200)
+    # results = pipe(datasets["chat"], batch_size=4)
 
-    # as we only infer, we do not need the gradients
     with torch.no_grad():
-        datasets_responded = datasets.map(respond)  
-
-    clean(model, tokenizer)
+        model, tokenizer = load(model_path)
+        datasets = datasets.map(
+            lambda batch: respond(batch, model, tokenizer), 
+            batched=True, 
+            batch_size=8
+        )
     
-    return datasets_responded
-
-def clean(model, tokenizer):
-    # explicitly remove model 
-    del model
-    del tokenizer
+    return datasets
+        
+def clean(model: Optional[Any] = None, tokenizer: Optional[Any] = None):
+    try:
+        # explicitly remove model 
+        del model
+        del tokenizer
+    except UnboundLocalError:
+        pass
 
     import gc
     gc.collect()

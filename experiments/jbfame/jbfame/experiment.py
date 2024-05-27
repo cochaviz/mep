@@ -7,7 +7,7 @@ import jbfame.data as data
 import jbfame.utils as utils
 
 def run(
-        args: utils.params.CustomArguments,
+        args: utils.params.ExperimentArguments,
         training_args: utils.params.TrainingArgumentsCustomDefaults,
     ):
     if args.use_wandb: 
@@ -101,7 +101,7 @@ def run(
 
 def __main__():
     parser = HfArgumentParser(
-        [utils.params.CustomArguments, utils.params.TrainingArgumentsCustomDefaults], # type: ignore
+        [utils.params.ExperimentArguments, utils.params.TrainingArgumentsCustomDefaults], # type: ignore
         description="Run the JBFAME experiments. Check the jbfame jupyter notebook for more information on the exact parameters used in the experiments and the results."
     )
     parser.add_argument("--list-tasks", action="store_true", help="List all available tasks.")

@@ -43,6 +43,9 @@ class Task:
         raise NotImplementedError("Method not implemented") 
         
     def populate(self, output_dir: str) -> "Task":
+        if not os.path.exists(output_dir):
+            return self
+
         matches = list(filter(
                 lambda name: 
                     name.startswith(f"{self.name}") and name.endswith(".parquet"), 
