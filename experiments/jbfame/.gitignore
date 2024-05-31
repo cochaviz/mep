@@ -1,7 +1,8 @@
 data
-external
-__pycache__
-wandb
-
 */**/*.parquet
 *.parquet
+wandb
+
+__pycache__
+.conda
+.cache

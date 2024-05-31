@@ -1,6 +1,6 @@
 from enum import Enum
-from typing import Any, Optional
-from warnings import warn
+import gc
+from typing import Any
 
 from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig, pipeline
 from datasets import DatasetDict
@@ -8,9 +8,14 @@ from peft.utils.other import prepare_model_for_kbit_training
 from peft.mapping import get_peft_model
 from peft.tuners.lora import LoraConfig
 import torch
-from zmq import device
+
+import logging
 
 from jbfame import utils
+from jbfame.utils.params import ExperimentArguments
+logger = logging.getLogger(__name__)
+
+DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 class Quantization(Enum):
     """
@@ -26,6 +31,16 @@ def load(model_path: str, quantization: Quantization = Quantization.MODERATE):
     with meta-llama, the model is loaded with 4bit quantization and PEFT to
     optimize training and reduce resource usage.
     """
+    def add_padding_token(model: Any, tokenizer: Any):
+        """
+        Adds padding token to the tokenizer. This is necessary since the llama
+        tokenizer does not have a pad token by default.
+        """
+        logger.info("Adding padding token to tokenizer.")
+
+        tokenizer.add_special_tokens({"pad_token":"<pad>"})
+        model.resize_token_embeddings(len(tokenizer))
+
     def load_quantized_aggressive(model_path: str):
         """
         Load model and tokenizer from model_path using various optimization
@@ -58,14 +73,19 @@ def load(model_path: str, quantization: Quantization = Quantization.MODERATE):
             lora_dropout=0.05,
             task_type="CAUSAL_LM",
         )
-        # retrieve the quantized model and its parameter-efficient representation
-        model = AutoModelForCausalLM.from_pretrained(
-            model_path, quantization_config=bnb_config
-        )
+        # retrieve the quantized model and tokenizer
+        model = AutoModelForCausalLM.from_pretrained(model_path, quantization_config=bnb_config)
+        tokenizer = AutoTokenizer.from_pretrained(model_path)
+
+        # add special tokens
+        if model_path.startswith("meta-llama"):
+            add_padding_token(model, tokenizer)
+
+        # apply peft and quantization
         model = prepare_model_for_kbit_training(model)
         model = get_peft_model(model, lora_config)
 
-        return model, AutoTokenizer.from_pretrained(model_path)
+        return model, tokenizer
 
     def load_quantized_moderate(model_path: str):
         """
@@ -90,13 +110,20 @@ def load(model_path: str, quantization: Quantization = Quantization.MODERATE):
             lora_dropout=0.05,
             task_type="CAUSAL_LM",
         )
-        # retrieve the quantized model and its parameter-efficient representation
-        model = AutoModelForCausalLM.from_pretrained(
-            model_path, torch_dtype=torch.bfloat16
-        )
+        # retrieve the quantized model and tokenizer
+        model = AutoModelForCausalLM.from_pretrained(model_path, torch_dtype=torch.bfloat16)
+        tokenizer = AutoTokenizer.from_pretrained(model_path)
+
+        # add special tokens
+        if model_path.startswith("meta-llama"):
+            add_padding_token(model, tokenizer)
+
+        # apply peft
         model = get_peft_model(model, lora_config)
 
-        return model, AutoTokenizer.from_pretrained(model_path)
+        return model, tokenizer
+
+    logger.info(f"Loading model from {model_path} with quantization {quantization}.")
 
     if quantization == Quantization.MODERATE:
         model, tokenizer = load_quantized_moderate(model_path)
@@ -105,13 +132,9 @@ def load(model_path: str, quantization: Quantization = Quantization.MODERATE):
     if quantization == Quantization.NONE:
         model, tokenizer = AutoModelForCausalLM.from_pretrained(model_path), AutoTokenizer.from_pretrained(model_path)    
 
-    # by default, llama doesn't have a pad token
-    tokenizer.add_special_tokens({"pad_token":"<pad>"})
-    model.resize_token_embeddings(len(tokenizer))
-
     return model, tokenizer
 
-def batch_respond(datasets: DatasetDict, model_path: str="meta-llama/Llama-2-7b-chat-hf") -> DatasetDict:
+def add_response(datasets: DatasetDict, model_path: str, batch_size: int) -> DatasetDict:
     """
     Standard llama response function. This function is used to respond to
     prompts in the 'chat' format.
@@ -125,39 +148,32 @@ def batch_respond(datasets: DatasetDict, model_path: str="meta-llama/Llama-2-7b-
         # move to gpu by default. No chance you're gonna run llama 7b on cpu ;)
         input_ids: torch.Tensor = tokenizer.apply_chat_template(
             data["chat"], return_tensors="pt", padding=True
-        ).to("cuda") # type: ignore
+        ).to(DEVICE) 
+        # generate outputs and remove from ram
+        outputs = model.generate(input_ids=input_ids, max_new_tokens=100, pad_token_id=0)
+        outputs = outputs.cpu()
 
-        output = model.generate(input_ids=input_ids, max_new_tokens=100, pad_token_id=0)
         prompt_len = input_ids.shape[-1]
-        response = tokenizer.decode(output[0][prompt_len:], skip_special_tokens=True)
+        responses = [
+            tokenizer.decode(output[prompt_len:], skip_special_tokens=True)
+            for output in outputs
+        ]
 
-        data["chat"].append({"role": "assistant", "content": response})
+        for chat, response in zip(data["chat"], responses):
+            chat.append({ "role": "assistant", "content": response })
+
         return data
 
-    # pipe = pipeline("text-generation", model=model_path, device=0)
-    # datasets = utils.datasets._filter_prompt_length(datasets, 200)
-    # results = pipe(datasets["chat"], batch_size=4)
+    logger.info(f"Adding responses to datasets (with keys: {list(datasets.keys())}) using model from {model_path}.")
 
     with torch.no_grad():
         model, tokenizer = load(model_path)
+
+        # move to available device
+        model.to(DEVICE)
+
         datasets = datasets.map(
             lambda batch: respond(batch, model, tokenizer), 
             batched=True, 
-            batch_size=8
+            batch_size=batch_size
         )
-    
-    return datasets
-        
-def clean(model: Optional[Any] = None, tokenizer: Optional[Any] = None):
-    try:
-        # explicitly remove model 
-        del model
-        del tokenizer
-    except UnboundLocalError:
-        pass
-
-    import gc
-    gc.collect()
-
-    # empty gpu cache
-    torch.cuda.empty_cache()

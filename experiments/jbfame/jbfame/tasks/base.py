@@ -3,6 +3,9 @@ from typing import Optional
 
 TaskDict = dict[str, "Task"]
 
+import logging
+logger = logging.getLogger(__name__)
+
 class Task:
     """
     Base class for all tasks. Subclasses must implement the download and prepare
@@ -22,6 +25,7 @@ class Task:
 
     def download(self, output_dir: str) -> str:
         if not self._downloaded and not self._prepared:
+            logger.debug(f"No downloaded or prepared file found for {self.name}. Downloading.")
             self.downloaded = self._download(output_dir)
 
         # it doesn't matter which one is returned, as long as 
@@ -29,6 +33,7 @@ class Task:
         try: 
             return self.downloaded 
         except AssertionError:
+            logger.info("No downloaded file found. Returning prepared file.")
             return self.prepared
     
     def _download(self, output_dir: str) -> str:
@@ -36,6 +41,7 @@ class Task:
 
     def prepare(self, prior_tasks: TaskDict) -> str: 
         if not self._prepared:
+            logger.debug(f"No prepared file found for {self.name}. Preparing.")
             self.prepared = self._prepare(prior_tasks)
         return self.prepared
 
@@ -55,6 +61,7 @@ class Task:
         print(matches)
 
         if len(matches) > 0:
+            logger.info(f"Found prepared '.parquet' file for {self.name}.")
             self.prepared = os.path.join(output_dir, matches[0])
 
         return self
@@ -98,5 +105,6 @@ class PrepareOnlyTask(Task):
         assert cls.name != "base_prepare", "PrepareOnlyTask subclass must have a name"
 
     def download(self, output_dir: str) -> str:
+        logger.info(f"Skipping download for {self.name} (prepare-only task).")
         self.downloaded = os.path.join(output_dir, f"{self.name}.dummy")
         return self.downloaded

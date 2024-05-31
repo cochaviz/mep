@@ -1,22 +1,33 @@
-
+from curses import meta
 import time
 from dataclasses import dataclass, field
 from typing import Optional
 
-from transformers import TrainingArguments
+from transformers import TrainingArguments, HfArgumentParser
+from dataclass_wizard import YAMLWizard
+
+from jbfame import utils
 
 datetime_format = "%Y-%m-%d-%H-%M-%S"
 
 @dataclass
-class TrainingArgumentsCustomDefaults(TrainingArguments):
+class TrainingArgumentsCustomDefaults(TrainingArguments, YAMLWizard):
+    """
+    Arguments for training and evaluating the model. Whenever inference is used
+    in, for example the `models.batch_respond` function, the
+    `per_device_eval_batch_size` is also used since the same device is used for
+    for preprocessing and the experiment.
+
+    These values have been set up to work with the following specs:
+    - NVIDIA GeForce RTX 4090 (24GB VRAM)
+    - Intel Core i9-13900K
+    - 32GB DDR5 RAM
+    """
     output_dir: str = field(
         default=time.strftime(datetime_format),
     )
     warmup_steps: int = field(
         default=1,
-    )
-    per_device_train_batch_size: int = field(
-        default=2,
     )
     gradient_accumulation_steps: int = field(
         default=1,
@@ -25,7 +36,7 @@ class TrainingArgumentsCustomDefaults(TrainingArguments):
         default=True,
     )
     max_steps: int = field(
-        default=500,
+        default=512,
     )
     learning_rate: float = field(
         default=2.5e-5,
@@ -36,12 +47,21 @@ class TrainingArgumentsCustomDefaults(TrainingArguments):
     save_strategy: str = field(
         default="no"
     )
+    per_device_eval_batch_size: int = field(
+        default=32,
+    )
+    per_device_train_batch_size: int = field(
+        default=16,
+    )
 
 
 @dataclass
-class ExperimentArguments:
-    """Arguments for the script. If you'd like to change the training
-    configuration, use TrainingArguments."""
+class ExperimentArguments(YAMLWizard):
+    """
+    Arguments for running the experiment that are not mentioned in the
+    huggingface TrainingArguments class, i.e. ones that are specific to the
+    experiment.
+    """
 
     model_path: str = field(
         default="meta-llama/Llama-2-7b-chat-hf", 
@@ -65,7 +85,7 @@ class ExperimentArguments:
                             questions.""" }
     )
     max_prompt_length: int = field(
-        default=512,
+        default=12,
         metadata={ "help": """Maximum length of the prompt (in number of
                            tokens). Any datapoints over this amount are
                            discarded.""" }
@@ -91,11 +111,28 @@ class ExperimentArguments:
                            directory will be used as the top level directory for
                            all runs.""" }
     ) 
+    training_args: TrainingArgumentsCustomDefaults = field(
+        default_factory=TrainingArgumentsCustomDefaults,
+        metadata={ "help": """Training arguments for the model. If you'd like to
+                           change the training configuration, use
+                           TrainingArguments.""" }
+    )
+    purple_llama_batch_size_ratio: float = field(
+        default=0.25,
+        metadata={ "help": """Ratio of the per_device_batch_size to use for the purple
+                           llama model. PurpleLlama is larger than the normal
+                           Llama model, so it should be maller than 1.0.""" }
+    )
 
     # Options for testing and debugging
     _task_size: Optional[int] = field(
         default=None,
         metadata={ "help": """Number of samples in each task. Used for
+                           testing and debugging.""" }
+    )
+    _current_config: str= field(
+        default="params_default.yaml",
+        metadata={ "help": """Path to the current configuration file. Used for
                            testing and debugging.""" }
     )
 
@@ -111,3 +148,32 @@ class ExperimentArguments:
             str_repr += "\n"
 
         return str_repr
+
+    def __hash__(self) -> int:
+        return super().__hash__()
+
+def parse_default_args(other_args: Optional[list] = None):
+    parser = HfArgumentParser(
+        [utils.params.ExperimentArguments, TrainingArgumentsCustomDefaults], # type: ignore
+    )
+    parser.add_argument("--config", help="Relative path to the experiment configuration file. If available, other arguments will be ignored.")
+
+    if other_args:
+        for name, argv in other_args:
+            parser.add_argument(name, **argv)
+
+    args = parser.parse_args_into_dataclasses()
+
+    if args[-1].config:
+        # load parameters from file if given
+        experiment_args = ExperimentArguments.from_yaml_file(args[-1].config)
+    else:
+        # store parameters in a file to save and for preprocessing steps
+        experiment_args = args[0]
+        experiment_args.training_args = args[1]
+        # take the model name for clarity and hash for uniqueness
+        experiment_args.to_yaml_file(
+            f"params_{experiment_args.model_path.split("/")[-1]}_{hash(experiment_args)}.yaml"
+        )
+        
+    return experiment_args, args[-1]
