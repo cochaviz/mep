@@ -57,9 +57,6 @@ class Task:
                     name.startswith(f"{self.name}") and name.endswith(".parquet"), 
                     os.listdir(output_dir)
             ))
-
-        print(matches)
-
         if len(matches) > 0:
             logger.info(f"Found prepared '.parquet' file for {self.name}.")
             self.prepared = os.path.join(output_dir, matches[0])

@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from gc import disable
 import os
 from typing import Optional
 
@@ -32,7 +33,7 @@ def check_tasks(tasks: list[str]) -> bool:
     return set(tasks).issubset(available_tasks())
 
 
-def download(tasks: TaskDict, output_dir: str) -> TaskDict:
+def download(tasks: TaskDict, output_dir: str, disable_tqdm: bool = False) -> TaskDict:
     assert "null" in tasks, "null task has to be present to build other tasks."
 
     logger.info(f"Downloading tasks to {output_dir}.")
@@ -42,19 +43,25 @@ def download(tasks: TaskDict, output_dir: str) -> TaskDict:
         os.makedirs(output_dir)
 
     # dowload selected tasks in output_dir
-    for task_name, task in (pbar := tqdm(tasks.items(), desc="Downloading tasks")):
+    for task_name, task in (pbar := tqdm(
+        tasks.items(), desc="Downloading tasks", disable=disable_tqdm
+    )):
         pbar.set_postfix_str(task_name)
         task.download(output_dir)
 
     return tasks
 
-def prepare(tasks: TaskDict, cleanup: bool = True) -> TaskDict:
+def prepare(tasks: TaskDict, cleanup: bool = True, disable_tqdm: bool = False) -> TaskDict:
     assert "null" in tasks, "null task has to be present to build other tasks."
 
     logger.info(f"Preparing tasks.")
 
     # prepare all tasks that have been downloaded
-    for task_name, task in (pbar := tqdm(tasks.items(), desc="Preparing tasks")): 
+    for task_name, task in (pbar := tqdm(
+        tasks.items(), 
+        desc="Preparing tasks", 
+        disable=disable_tqdm
+    )): 
         pbar.set_postfix_str(task_name)
         task.prepare(tasks)
 
@@ -75,6 +82,7 @@ def download_and_prepare(
     tasks: Optional[list[str]] = None, 
     output_dir="data", 
     cleanup: bool = True, 
+    disable_tqdm: bool = False
 ) -> DatasetDict:
     tasks = tasks or available_tasks()
 
@@ -92,8 +100,8 @@ def download_and_prepare(
         }
 
     # download and prepare unprepared tasks, cleanup if chosen
-    download(task_dict, output_dir)
-    prepare(task_dict, cleanup)
+    download(task_dict, output_dir, disable_tqdm)
+    prepare(task_dict, cleanup, disable_tqdm)
 
     task_paths = { task_name: task.prepared for task_name, task in task_dict.items() }
 

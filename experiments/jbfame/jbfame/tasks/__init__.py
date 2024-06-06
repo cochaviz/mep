@@ -1,3 +1,4 @@
+from jbfame.tasks.albert import Albert
 from jbfame.tasks.null import Null
 from jbfame.tasks.dan import Dan
 from jbfame.tasks.aart import AArt
@@ -14,6 +15,7 @@ all_tasks: dict[str, type[Task]] = {
     # ADan.name: ADan,
     Wiki.name: Wiki,
     EncB64.name: EncB64,
+    Albert.name: Albert,
 }
 
 __all__ = [
@@ -24,4 +26,5 @@ __all__ = [
     # "ADan",
     "EncB64",
     "TaskDict",
+    "Albert"
 ]

@@ -85,11 +85,17 @@ class ExperimentArguments(YAMLWizard):
                             questions.""" }
     )
     max_prompt_length: int = field(
-        default=12,
+        default=128,
         metadata={ "help": """Maximum length of the prompt (in number of
                            tokens). Any datapoints over this amount are
                            discarded.""" }
     )
+    max_response_length: int = field(
+        default=128,
+        metadata={ "help": """Maximum length of the response (in number of
+                           tokens). Any datapoints over this amount are
+                           discarded.""" }
+    ) 
     shuffle: Optional[int] = field(
         default=None,
         metadata={ "help": """Seed for sampling 'train_set_size' examples from
@@ -117,11 +123,15 @@ class ExperimentArguments(YAMLWizard):
                            change the training configuration, use
                            TrainingArguments.""" }
     )
-    purple_llama_batch_size_ratio: float = field(
+    llama_guard_batch_size_ratio: float = field(
         default=0.25,
         metadata={ "help": """Ratio of the per_device_batch_size to use for the purple
                            llama model. PurpleLlama is larger than the normal
                            Llama model, so it should be maller than 1.0.""" }
+    )
+    disable_tqdm: bool = field(
+        default=False,
+        metadata={ "help": """Whether to disable tqdm progress bars.""" }
     )
 
     # Options for testing and debugging
