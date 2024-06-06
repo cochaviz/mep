@@ -111,13 +111,30 @@
         "panel": "shared",
         "showReuseMessage": true
       }
+    },
+    {
+      "label": "Open BTOP Monitor",
+      "type": "shell",
+      "command": "btop",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "shared",
+        "showReuseMessage": true
+      }
     }
   ],
   "inputs": [
     {
       "id": "target",
       "description": "Indicate the export file type",
-      "options": ["pdf", "html", "tex", "md"],
+      "options": [
+        "pdf",
+        "html",
+        "tex",
+        "md"
+      ],
       "default": "pdf",
       "type": "pickString"
     }

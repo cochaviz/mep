@@ -11,6 +11,10 @@
     }
   ],
   "settings": {
-    "pandocMarkdownPreview.extraPandocArguments": "--citeproc -F pandoc-crossref $([ -f ./metadata.yaml ] && echo \"--metadata=metadata.yaml\") -f markdown+mark"
+    "pandocMarkdownPreview.extraPandocArguments": "--citeproc -F pandoc-crossref $([ -f ./metadata.yaml ] && echo \"--metadata=metadata.yaml\") -f markdown+mark",
+    "workbench.editorAssociations": {
+      "*.pdf": "latex-workshop-pdf-hook",
+      "file:/**/*.parquet": "jupyter-data-wrangler"
+    }
   }
 }
