@@ -1,0 +1,27 @@
+experiment_args:
+    # Name of the model, or path as found in the Huggingface model hub
+    model_path: "meta-llama/Llama-2-7b-chat-hf"
+    tasks: null
+    response_unsafe: "Sorry, but I cannot help with that."
+    response_safe: "Of course, here is"
+    max_prompt_length: 128
+    shuffle: null
+    use_wandb: false
+    data_dir: "data"
+    number_of_runs: 4
+    purple_llama_batch_size_ratio: 0.25
+
+    # debug options
+    _task_size: null
+
+training_args:
+    output_dir: null
+    warmup_steps: 1
+    gradient_accumulation_steps: 1
+    gradient_checkpointing: true
+    max_steps: 512
+    learning_rate: 2.5e-5
+    optim: "paged_adamw_8bit"
+    save_strategy: "no"
+    per_device_eval_batch_size: 16
+    per_device_train_batch_size: 16
