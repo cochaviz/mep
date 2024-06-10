@@ -1,4 +1,4 @@
-from curses import meta
+from enum import Enum
 import time
 from dataclasses import dataclass, field
 from typing import Optional
@@ -7,6 +7,11 @@ from transformers import TrainingArguments, HfArgumentParser
 from dataclass_wizard import YAMLWizard
 
 from jbfame import utils
+
+class LlamaGuardVersion(Enum):
+    NONE = "none"
+    V1 = "meta-llama/LlamaGuard-7b"
+    V2 = "meta-llama/Meta-Llama-Guard-2-8B" 
 
 datetime_format = "%Y-%m-%d-%H-%M-%S"
 
@@ -129,6 +134,11 @@ class ExperimentArguments(YAMLWizard):
                            llama model. PurpleLlama is larger than the normal
                            Llama model, so it should be maller than 1.0.""" }
     )
+    llamaguard_version: LlamaGuardVersion = field(
+        default=LlamaGuardVersion.V2,
+        metadata={ "help": """Version of the purple llama model to use.""" }
+    )
+                            
     disable_tqdm: bool = field(
         default=False,
         metadata={ "help": """Whether to disable tqdm progress bars.""" }

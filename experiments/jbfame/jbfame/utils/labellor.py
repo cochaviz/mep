@@ -160,7 +160,10 @@ def main(
     except FileNotFoundError:
         print("Creating new file for labeled data...")
         labeled = df.copy()
-        labeled.insert(0, target_column, None)
+        try:
+            labeled.insert(0, target_column, None)
+        except ValueError:
+            logger.warning(f"Column {target_column} already exists in the dataframe. Taking existing column.")
 
     labeled[target_column] = label_column(
         df[source_column], 

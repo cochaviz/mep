@@ -5,6 +5,7 @@ import subprocess
 from typing import Optional
 
 import pandas as pd
+from regex import W
 import seaborn as sns
 from torch import Value
 from tqdm import tqdm
@@ -212,6 +213,13 @@ def preprocess(
     if not tokenizer:
         return processed
 
+    # this will filter out False and None values for the 'jailbreak' column
+    jailbroken = processed.filter(lambda row: row["jailbreak"])
+
+    if jailbroken.num_rows == 0:
+        raise ValueError("No jailbreak prompts found. Please make sure the 'jailbreak' column is present in the dataset and some prompts incite jailbreaks.")
+
+    logger.info(f"Jailbreak prompts: {jailbroken.num_rows}.")
     logger.info("Tokenizing prompts and responses.")
 
     # expected responses are only added after since, if we do not have a
