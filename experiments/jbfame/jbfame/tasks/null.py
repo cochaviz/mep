@@ -14,7 +14,7 @@ class Null(Task):
     name: str = "null"
 
     def _download(self, output_dir: str) -> str:
-        null_link = "https://raw.githubusercontent.com/verazuo/jailbreak_llms/main/data/questions.csv"
+        null_link = "https://raw.githubusercontent.com/verazuo/jailbreak_llms/main/data/forbidden_question/forbidden_question_set.csv"
         # null_link = "https://raw.githubusercontent.com/SheltonLiu-N/AutoDAN/main/data/advbench/harmful_behaviors.csv"
         null_path = f"{self.name}.csv"
 
