@@ -13,7 +13,7 @@ class Dan(Task):
     name: str = "dan"
 
     def _download(self, output_dir: str) -> str:
-        dan_link = "https://raw.githubusercontent.com/verazuo/jailbreak_llms/main/data/jailbreak_prompts.csv"
+        dan_link = "https://raw.githubusercontent.com/verazuo/jailbreak_llms/main/data/prompts/jailbreak_prompts_2023_05_07.csv"
         dan_path = "dan.csv"
 
         subprocess.run(["wget", "-qO", dan_path, dan_link], cwd=output_dir, check=True)
