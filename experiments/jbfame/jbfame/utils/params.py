@@ -89,7 +89,7 @@ class ExperimentArguments(YAMLWizard):
         metadata={ "help" : """Response the model should give to unsafe
                             questions.""" }
     )
-    max_prompt_length: int = field(
+    max_prompt_length: Optional[int] = field(
         default=128,
         metadata={ "help": """Maximum length of the prompt (in number of
                            tokens). Any datapoints over this amount are
@@ -138,10 +138,14 @@ class ExperimentArguments(YAMLWizard):
         default=LlamaGuardVersion.V2,
         metadata={ "help": """Version of the purple llama model to use.""" }
     )
-                            
     disable_tqdm: bool = field(
         default=False,
         metadata={ "help": """Whether to disable tqdm progress bars.""" }
+    )
+    question_safety_classifier : str = field(
+        default="refusal",
+        metadata={ "help": """Method for tagging prompt safety. Options are
+                           'refusal', 'llamaguard', or 'all'.""" }
     )
 
     # Options for testing and debugging
@@ -154,6 +158,17 @@ class ExperimentArguments(YAMLWizard):
         default="params_default.yaml",
         metadata={ "help": """Path to the current configuration file. Used for
                            testing and debugging.""" }
+    )
+    _task_tags: Optional[list[str]] = field(
+        default=None,
+        metadata={ "help": """List of tags to filter tasks by (using format
+                           `task_name.tag_1.tag_2.extension`). Used for testing
+                           and debugging.""" }
+    )
+    _jailbreak_is_none: bool = field(
+        default=False,
+        metadata={ "help": """Whether to treat the None values as Jailbreaks in
+                           the 'jailbreak' column of the preprocessed data.""" }
     )
 
     def __str__(self) -> str:

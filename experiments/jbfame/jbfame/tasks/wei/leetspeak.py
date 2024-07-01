@@ -25,7 +25,7 @@ class Leetspeak(PrepareOnlyTask):
 
     def _prepare(self, prior_tasks: TaskDict) -> str:
         def apply_transform(prompt: str) -> str:
-            return str(map(lambda character: self.alphabet.get(character, character), prompt))
+            return "".join((map(lambda character: self.alphabet.get(character, character), prompt)))
 
         null_df = pd.read_parquet(prior_tasks[Null.name].prepared)
 

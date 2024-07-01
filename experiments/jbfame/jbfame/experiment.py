@@ -4,8 +4,7 @@ import os
 import torch
 from transformers import Trainer, DataCollatorForLanguageModeling
 
-import jbfame.utils as utils
-import jbfame.data
+from jbfame import utils, data
 
 import logging
 logging.basicConfig(
@@ -13,6 +12,18 @@ logging.basicConfig(
     level=logging.INFO
 )
 logger = logging.getLogger(__name__)
+
+class O2UNetTrainer(Trainer):
+    previous_loss = None
+    
+    def compute_loss(self, model, inputs, return_outputs=False):
+        outputs = model(**inputs)
+        loss = outputs.loss
+
+        if return_outputs:
+            return loss, outputs
+
+        return loss
 
 def run(
         args: utils.params.ExperimentArguments,
@@ -35,15 +46,21 @@ def run(
     datasets = utils.datasets.load( args, try_preprocessed_from_remote=True)
 
     try:
-        datasets = utils.datasets.preprocess(datasets, args, tokenizer=tokenizer)
-    except Exception as e:
+        datasets = utils.datasets.preprocess(
+            datasets, args, 
+            tokenizer=tokenizer,
+            remove_unused_columns=True
+        )
+    except Exception:
         # clean up
         del model, tokenizer
         gc.collect()
         torch.cuda.empty_cache()
 
         # continue
-        raise e
+        raise
+
+    logger.info(f"Starting training for {args.model_path} with {datasets.num_rows}.")
     
     # we're running multiple experiments, so these will all reside in the
     # top_level_output_dir
@@ -88,14 +105,14 @@ def run(
                     # but it is supposed to speed up training
                     data_collator=DataCollatorForLanguageModeling(tokenizer, mlm=False), 
                 ).train()
-            except Exception as e:
+            except Exception:
                 # clean up
                 del model, tokenizer
                 gc.collect()
                 torch.cuda.empty_cache()
 
                 # continue
-                raise e
+                raise
 
     # clean up
     del model, tokenizer
@@ -112,7 +129,7 @@ if __name__ == "__main__":
 
     if other_args.list_tasks:
         print("Available tasks:")
-        for task in jbfame.data.all_tasks.keys():
+        for task in data.all_tasks.keys():
             print(f"  - {task}")
         exit()
 

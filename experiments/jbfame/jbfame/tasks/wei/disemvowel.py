@@ -11,10 +11,10 @@ class Disemvowel(PrepareOnlyTask):
     name = "disemvowel"
     vowels = [ "a", "e", "i", "o", "u" ]
 
-    def _prepare(self, prior_tasks: TaskDict) -> str:
-        def apply_transform(prompt: str) -> str:
-            return str(filter(lambda x: x not in self.vowels, prompt))
+    def _apply_transform(self, prompt: str) -> str:
+        return "".join(filter(lambda x: x not in self.vowels, prompt))
 
+    def _prepare(self, prior_tasks: TaskDict) -> str:
         null_df = pd.read_parquet(prior_tasks[Null.name].prepared)
 
         # attach question id to prompt
@@ -24,7 +24,7 @@ class Disemvowel(PrepareOnlyTask):
         })
         # encode prompt
         enc_df["prompt"] = enc_df["prompt"].apply(
-            apply_transform
+            self._apply_transform
         )
         # save to parquet
         self.prepared = self.downloaded.replace(".dummy", ".parquet")

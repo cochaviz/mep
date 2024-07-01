@@ -28,18 +28,3 @@ all_tasks: dict[str, type[Task]] = {
     Disemvowel.name: Disemvowel,
     Leetspeak.name: Leetspeak,
 }
-
-__all__ = [
-    "Base64InputOnly",
-    "PrefixInjection",
-    "PrefixInjectionHello",
-    "RefusalSuppression",
-    "StyleInjectionShort",
-    "StyleInjectionJson",
-    "Distractors",
-    "DistractorsNegated",
-    "Wikipedia",
-    "WikipediaWithTitle",
-    "Disemvowel",
-    "Leetspeak",
-]

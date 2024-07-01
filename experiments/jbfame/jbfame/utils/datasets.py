@@ -1,3 +1,4 @@
+from functools import partial
 import os
 import random
 import shutil
@@ -5,11 +6,9 @@ import subprocess
 from typing import Optional
 
 import pandas as pd
-from regex import W
 import seaborn as sns
-from torch import Value
 from tqdm import tqdm
-from datasets import DatasetDict
+from datasets import Dataset, DatasetDict, concatenate_datasets
 from transformers import PreTrainedTokenizerBase
 
 from jbfame import data, utils
@@ -17,6 +16,24 @@ from jbfame.utils.params import ExperimentArguments
 
 import logging
 logger = logging.getLogger(__name__)
+
+def flatten(datasets: DatasetDict, column_name) -> Dataset:
+    flattened = DatasetDict()
+
+    for task, dataset in datasets.items():
+        flattened[task] = dataset.add_column(column_name, [task] * len(dataset))
+
+    return concatenate_datasets([dataset for dataset in flattened.values()])
+
+def expand(dataset: Dataset, column_name) -> DatasetDict:
+    expanded = DatasetDict()
+
+    for column_value in list(set(dataset[column_name])):
+        expanded[column_value] = dataset\
+                .filter(lambda example: example[column_name] == column_value)\
+                .remove_columns(column_name)
+
+    return expanded
 
 def load(
     args: ExperimentArguments,
@@ -124,10 +141,19 @@ def load(
 
     tasks = args.tasks or data.available_tasks()
 
+    # applying partially is nice because updating the parameters is easier
+    # since the function is called in mutliple places
+    download_and_prepare = partial(
+        data.download_and_prepare, 
+            tasks=tasks, 
+            output_dir=args.data_dir, 
+            disable_tqdm=args.disable_tqdm, 
+            tags=args._task_tags
+    )
     # if the data directory does not exist, download the data
     if not try_preprocessed_from_remote or os.path.exists(args.data_dir):
         logger.info(f"Data directory ({args.data_dir}) exists. Loading datasets from local storage.")
-        datasets = data.download_and_prepare(tasks, args.data_dir, args.disable_tqdm) 
+        datasets = download_and_prepare()
     else:
         try:
             load_preprocessed_from_remote(tasks)
@@ -135,7 +161,7 @@ def load(
             shutil.rmtree(args.data_dir)
             logger.warning("Failed to download (some) preprocessed datasets from remote, or not all required tasks were available. Downloading and preparing datasets locally.")
         finally:
-            datasets = data.download_and_prepare(tasks, args.data_dir, args.disable_tqdm)
+            datasets = download_and_prepare()
 
     # always the case when downloading with the 'download_and_prepare' function
     assert "null" in datasets, "The null task has to be present in the dataset."
@@ -175,7 +201,7 @@ def preprocess(
                 "content": row["prompt"] 
             }, { 
                 "role": "assistant", 
-                "content": response_unsafe if row["unsafe"] else response_safe
+                "content": response_unsafe if ["unsafe"] else response_safe
             }  
         ]
         return row    
@@ -183,7 +209,7 @@ def preprocess(
     def tokenize(batch: dict):
         assert tokenizer, "Tokenizer has to be provided in order to tokenize the data."
 
-        batch["chat"] = tokenizer.apply_chat_template(
+        batch["input_ids"] = tokenizer.apply_chat_template(
             batch["chat"], 
             return_tensors="pt", 
             padding=True
@@ -196,7 +222,7 @@ def preprocess(
 
     # we generally only care about the unsafe questions, since otherwise we
     # cannot determine whether it is a successful jailbreak prompt
-    processed = _unsafe_questions(datasets, args)
+    processed = _tag_question_safety(datasets, args)
 
     if args.max_prompt_length:
         logger.info(f"Filtering prompts longer than {args.max_prompt_length} tokens.")
@@ -206,33 +232,71 @@ def preprocess(
         # is not ideal, but it allows for easy batching and is good enough for me.
         processed = _filter_prompt_length(processed, args.max_prompt_length)
 
+    # save current state for later processing
+    datasets_safety_tagged = processed.copy()
+    logger.debug(f"Tasks after safety tagging: {datasets_safety_tagged}")
+
     # filtering jailbreaks only after the prompt length has been filtered, since
     # it saves a lot of time
-    processed = _jailbreak_prompts(processed, args)
+    processed = _tag_jailbreak_success(processed, args)
 
     if not tokenizer:
         return processed
 
-    # this will filter out False and None values for the 'jailbreak' column
-    jailbroken = processed.filter(lambda row: row["jailbreak"])
+    # FIXME: Assume all None values are True
+    # processed = processed.map(lambda row: { **row, "jailbreak": row["jailbreak"] if row["jailbreak"] is None else row["jailbreak"] })
 
-    if jailbroken.num_rows == 0:
-        raise ValueError("No jailbreak prompts found. Please make sure the 'jailbreak' column is present in the dataset and some prompts incite jailbreaks.")
+    # Filter out jailbreaks based on None values if the jailbreak_is_none flag
+    # is set. Otherwise use the jailbreak flag as is. This is useful when we
+    # use automatic labelling vs. manual labelling.
+    processed = processed.filter(lambda row: 
+        (row["jailbreak"] is None and args._jailbreak_is_none) \
+            or (row["jailbreak"] == True and not args._jailbreak_is_none)
+    )
 
-    logger.info(f"Jailbreak prompts: {jailbroken.num_rows}.")
+    # no data is problematic
+    if isinstance(processed, Dataset) and processed.num_rows == 0 \
+        or isinstance(processed, DatasetDict) and all([ dataset.num_rows == 0 for dataset in processed.values() ]):
+        raise ValueError("None of the available datasets have more than 0 rows.")
+    # some data is all right, as long as we know which ones are empty
+    if isinstance(processed, DatasetDict) and any([ dataset.num_rows == 0 for dataset in processed.values() ]):
+        empty_datasets = { task : dataset for task, dataset in processed.items() if dataset.num_rows == 0 }
+        logger.warning(f"Some datasets do not have any rows: {list(empty_datasets.keys())}.")
+
+        processed_new = DatasetDict()
+
+        for task, dataset in processed.items():
+            if task not in empty_datasets.keys():
+                processed_new[task] = dataset
+    
+        processed = processed_new                
+        logger.info(f"Filtered out empty datasets: {list(empty_datasets.keys())}. New tasks: {list(processed.keys())}.")
+
+    logger.info("Balancing datasets with safe and unsafe questions.")
+    for task, dataset in processed.items():
+        safe_samples = datasets_safety_tagged[task].filter(lambda row: not row["unsafe"]).shuffle(seed=args.shuffle)
+
+        logger.debug(f"Task {task}: {len(safe_samples)} safe questions sampled from {len(datasets[task])} questions.")
+        logger.debug(f"Task {task}: {safe_samples}")
+
+        processed[task] = concatenate_datasets([processed[task], safe_samples])
+
     logger.info("Tokenizing prompts and responses.")
 
     # expected responses are only added after since, if we do not have a
     # tokenizer, we do not expect to run the full experiment
     processed = processed.map(
         set_expected_response,
-        batched=True
+        batched=False
     )
+    logger.debug(f"Expected response example: {processed["null"][0]["chat"][:2]}")
 
     #  all columns except the input_ids, since we only need this for training
-    #  and inference
+    #  and inference.
     all_but_input_ids: list[str] = list(set(datasets["null"].column_names) - set(["input_ids", "q_id"]))
-    logger.debug("Removing columns: " + ", ".join(all_but_input_ids))
+
+    if remove_unused_columns:
+        logger.debug("Removing columns: " + ", ".join(all_but_input_ids))
 
     # because the 'apply chat template' does not work in batch mode, we have to
     # do this separately
@@ -246,22 +310,26 @@ def persist(
     args: ExperimentArguments, 
     datasets: Optional[DatasetDict], 
     save_dir: str = "assets/data_preprocessed",
-    tag: bool = True,
+    tag: Optional[str] = None,
+    override: bool = False,
+    add_model_path: bool = False,
 ):
     def write_to_file(datasets: DatasetDict):
-
-        output_path = f"{save_dir}/{args.model_path}" if tag else save_dir
-
-        os.makedirs(output_path, exist_ok=False)
+        os.makedirs(save_dir, exist_ok=override)
 
         for task, dataset in datasets.items():
-            dataset.to_parquet(f"{output_path}/{task}.parquet")
-        
-        return output_path
+            if tag:
+                task = f"{task}.{tag}"
 
+            dataset.to_parquet(
+                os.path.join(save_dir, f"{task}.parquet")
+            )
+        return save_dir
+
+    if add_model_path:
+        save_dir = os.path.join(save_dir, args.model_path)
     if not datasets:
         datasets = load(args)
-    
     return write_to_file(datasets)
 
 def info(
@@ -317,23 +385,10 @@ def info(
 
     return param_df.groupby("task").describe()
 
-# def _set_chat(datasets: DatasetDict, column:str) -> DatasetDict:
-#     def set_chat(row):
-#         row["chat"] = [{ "role": "user", "content": row["prompt"] }]
-#         return row
-
-#     for task, dataset in datasets.items():
-#         if column in dataset.column_names:
-#             continue
-
-#         datasets[task] = dataset.map(set_chat)
-
-#     return datasets
-
 def _all_have_column(datasets: DatasetDict, column: str) -> bool:
     return all(map(lambda dataset: column in dataset.column_names, datasets.values()))
 
-def _unsafe_questions(
+def _tag_question_safety(
     datasets: DatasetDict,
     args: ExperimentArguments,
 ) -> DatasetDict:
@@ -342,7 +397,7 @@ def _unsafe_questions(
         # we only care about the 'null' dataset when it comes to safe or unsafe
         # questions, since all other tasks depend on null for the actual questions
         datasets["null"] = utils.safety.tag_prompt_safety(
-            datasets["null"], args # type: ignore
+            datasets["null"], args, args.question_safety_classifier # type: ignore
         )
         datasets["null"].to_parquet(os.path.join(args.data_dir, "null.parquet"))
     else:
@@ -351,12 +406,19 @@ def _unsafe_questions(
     if "unsafe" in datasets["null"].column_names and not _all_have_column(datasets, "unsafe"):
         # on reload, the unsafe column is inserted in all datasets 
         datasets = utils.datasets.load(args)
+
+        persist(
+            args, datasets, 
+            save_dir=args.data_dir,
+            override=True,
+            add_model_path=True
+        )
     else:
         logger.info("Unsafe column already present in all tasks. Not generating.")
 
     return datasets
 
-def _jailbreak_prompts(
+def _tag_jailbreak_success(
     datasets: DatasetDict,
     args: ExperimentArguments,
 ) -> DatasetDict:
@@ -365,6 +427,12 @@ def _jailbreak_prompts(
         # whether the conversation is unsafe
         datasets = utils.safety.tag_prompt_jailbreak(
             datasets, args 
+        )
+        persist(
+            args, datasets, 
+            save_dir=args.data_dir,
+            override=True,
+            add_model_path=True
         )
     else:
         logger.info("Jailbreak column already present in all tasks. Not generating.")
@@ -400,9 +468,9 @@ def __main__():
     datasets = load(experiment_args)
 
     if other_args.stage == "tag_safety":
-        datasets = _unsafe_questions(datasets, experiment_args)
+        datasets = _tag_question_safety(datasets, experiment_args)
     if other_args.stage == "tag_jailbreak":
-        datasets = _jailbreak_prompts(datasets, experiment_args)
+        datasets = _tag_jailbreak_success(datasets, experiment_args)
     if other_args.stage == "all":
         datasets = preprocess(datasets, experiment_args)
 

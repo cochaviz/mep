@@ -82,7 +82,8 @@ def download_and_prepare(
     tasks: Optional[list[str]] = None, 
     output_dir="data", 
     cleanup: bool = True, 
-    disable_tqdm: bool = False
+    disable_tqdm: bool = False,
+    tags: Optional[list[str]] = None
 ) -> DatasetDict:
     tasks = tasks or available_tasks()
 
@@ -95,7 +96,7 @@ def download_and_prepare(
 
     # retrieve tasks and populate if already present
     task_dict: TaskDict = { 
-        task_name : all_tasks[task_name]().populate(output_dir)
+        task_name : all_tasks[task_name]().populate(output_dir, tags)
              for task_name in tasks
         }
 

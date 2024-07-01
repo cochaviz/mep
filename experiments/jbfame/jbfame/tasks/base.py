@@ -1,5 +1,6 @@
 import os
 from typing import Optional
+from functools import partial
 
 TaskDict = dict[str, "Task"]
 
@@ -47,14 +48,22 @@ class Task:
 
     def _prepare(self, prior_tasks: TaskDict) -> str:
         raise NotImplementedError("Method not implemented") 
+
+    def _task_matches_file(self, tags: Optional[list[str]], filename: str):
+        filename_split = filename.split(".")
+
+        file_match = filename_split[0] == self.name and filename_split[-1] == "parquet"
+        tag_match = all(tag in filename_split[1:-1] for tag in tags) if tags else True
+
+        return file_match and tag_match
         
-    def populate(self, output_dir: str) -> "Task":
+    def populate(self, output_dir: str, tags: Optional[list[str]]) -> "Task":
         if not os.path.exists(output_dir):
             return self
 
+        logger.debug(f"Checking for downloaded files for {self.name} in {output_dir} with tags {tags or "N/A"}.")
         matches = list(filter(
-                lambda name: 
-                    name.startswith(f"{self.name}") and name.endswith(".parquet"), 
+                    partial(self._task_matches_file, tags),
                     os.listdir(output_dir)
             ))
         if len(matches) > 0:
@@ -88,7 +97,7 @@ class Task:
         self._prepared = value
 
     def __str__(self) -> str:
-        return f"Task {self.name} downloaded at {self._downloaded or "N/A"} and prepared at {self._prepared or "N/A"}"
+        return f"Task {self.name} downloaded at {self._downloaded or 'N/A'} and prepared at {self._prepared or 'N/A'}"
 
 class PrepareOnlyTask(Task):
     """
