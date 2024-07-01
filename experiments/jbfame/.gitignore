@@ -2,6 +2,7 @@ data
 */**/*.parquet
 *.parquet
 wandb
+archive
 
 __pycache__
 .conda
